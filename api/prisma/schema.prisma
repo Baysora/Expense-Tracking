@@ -21,17 +21,17 @@ model OpCo {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  name        String
-  role        String
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  role         String
   passwordHash String
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   opCoId String?
-  opCo   OpCo?   @relation(fields: [opCoId], references: [id])
+  opCo   OpCo?   @relation(fields: [opCoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   submittedExpenses Expense[]        @relation("SubmittedBy")
   approvalRecords   ApprovalRecord[]
@@ -43,7 +43,7 @@ model ExpenseCategory {
   isActive Boolean @default(true)
 
   opCoId   String
-  opCo     OpCo      @relation(fields: [opCoId], references: [id])
+  opCo     OpCo      @relation(fields: [opCoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   expenses Expense[]
 
   @@unique([opCoId, name])
@@ -60,13 +60,13 @@ model Expense {
   updatedAt   DateTime @updatedAt
 
   categoryId String
-  category   ExpenseCategory @relation(fields: [categoryId], references: [id])
+  category   ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   submittedById String
-  submittedBy   User   @relation("SubmittedBy", fields: [submittedById], references: [id])
+  submittedBy   User   @relation("SubmittedBy", fields: [submittedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   opCoId String
-  opCo   OpCo   @relation(fields: [opCoId], references: [id])
+  opCo   OpCo   @relation(fields: [opCoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   attachments     ExpenseAttachment[]
   approvalRecords ApprovalRecord[]
@@ -85,7 +85,7 @@ model ExpenseAttachment {
   uploadedAt DateTime @default(now())
 
   expenseId String
-  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model ApprovalRecord {
@@ -95,8 +95,8 @@ model ApprovalRecord {
   createdAt DateTime @default(now())
 
   expenseId String
-  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   reviewedById String
-  reviewedBy   User   @relation(fields: [reviewedById], references: [id])
+  reviewedBy   User   @relation(fields: [reviewedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
