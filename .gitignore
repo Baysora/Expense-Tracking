@@ -19,6 +19,9 @@ frontend/dist/
 # Azure local settings
 api/local.settings.json
 
+# Prisma env (contains DB credentials)
+api/.env
+
 # Azurite local emulator
 .azurite/
 
