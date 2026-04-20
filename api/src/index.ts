@@ -1,0 +1,17 @@
+// Entry point — imports all function handlers so Azure Functions v4 registers them
+import "./functions/opcos/getOpCos";
+import "./functions/opcos/createOpCo";
+import "./functions/opcos/updateOpCo";
+import "./functions/users/getMe";
+import "./functions/users/getUsers";
+import "./functions/users/createUser";
+import "./functions/users/updateUser";
+import "./functions/categories/getCategories";
+import "./functions/categories/createCategory";
+import "./functions/categories/updateCategory";
+import "./functions/expenses/getExpenses";
+import "./functions/expenses/getExpenseById";
+import "./functions/expenses/createExpense";
+import "./functions/expenses/submitExpense";
+import "./functions/expenses/reviewExpense";
+import "./functions/uploads/uploadAttachment";
