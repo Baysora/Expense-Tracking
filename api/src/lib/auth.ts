@@ -57,7 +57,7 @@ export async function verifyToken(req: HttpRequest): Promise<TokenClaims | null>
 
     return {
       userId: payload["sub"] as string,
-      email: payload["emails"]?.[0] as string ?? payload["email"] as string,
+      email: (payload["emails"] as string[])?.[0] ?? payload["email"] as string,
       name: payload["name"] as string ?? "",
       role: (payload["extension_role"] as Role) ?? Role.OPCO_USER,
       opCoId: (payload["extension_opCoId"] as string) || null,

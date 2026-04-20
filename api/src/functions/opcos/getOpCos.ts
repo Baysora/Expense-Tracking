@@ -1,4 +1,4 @@
-import { app, HttpRequest, HttpResponseContext } from "@azure/functions";
+import { app, HttpRequest } from "@azure/functions";
 import { Role } from "@expense/shared";
 import { verifyToken, requireRoles } from "../../lib/auth";
 import { prisma } from "../../lib/prisma";
