@@ -3,6 +3,7 @@
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "node",
+    "WEBSITE_NODE_DEFAULT_VERSION": "~20",
     "DATABASE_URL": "sqlserver://localhost:1433;database=ExpenseTracking;user=sa;password=YourPass123!;encrypt=false",
     "AZURE_STORAGE_CONNECTION_STRING": "UseDevelopmentStorage=true",
     "AZURE_STORAGE_CONTAINER_NAME": "expense-attachments",
