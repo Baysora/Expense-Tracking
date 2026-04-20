@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { DEV_MODE, setDevCredentials, setDevUser } from "@/lib/auth";
 import { getRoleHome } from "@/lib/router";
-import { msalInstance, loginRequest, getClaimsFromAccount } from "@/lib/auth";
-import { userApi } from "@/lib/api";
+import { msalInstance, loginRequest } from "@/lib/auth";
 import { Role } from "@expense/shared";
 import { Loader2 } from "lucide-react";
 
@@ -31,40 +30,13 @@ export function Login() {
       const encoded = btoa(`${email}:${password}`);
       const authHeader = `Bearer dev:${encoded}`;
 
-      const res = await fetch("/api/users", {
-        headers: { Authorization: authHeader },
-      });
-
-      if (!res.ok) {
+      const meRes = await fetch("/api/me", { headers: { Authorization: authHeader } });
+      if (!meRes.ok) {
         setError("Invalid email or password");
         return;
       }
 
-      // Decode token claims from a lightweight endpoint
-      const meRes = await fetch("/api/me", { headers: { Authorization: authHeader } });
-      let claims = null;
-      if (meRes.ok) {
-        claims = await meRes.json();
-      } else {
-        // Fallback: parse from the users list (first entry matching email)
-        const users = await res.json();
-        const me = users.find((u: { email: string }) => u.email === email);
-        if (me) {
-          claims = {
-            userId: me.id,
-            email: me.email,
-            name: me.name,
-            role: me.role as Role,
-            opCoId: me.opCoId ?? null,
-          };
-        }
-      }
-
-      if (!claims) {
-        setError("Authentication failed");
-        return;
-      }
-
+      const claims = await meRes.json();
       setDevCredentials({ email, password });
       setDevUser(claims);
       setContextUser(claims);
