@@ -1,0 +1,110 @@
+@import "./tokens.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    background-color: var(--color-bg-subtle);
+    color: var(--color-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Ensure smooth scrolling and proper touch behavior on mobile */
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
+    background-color: var(--color-primary);
+  }
+  .btn-primary:hover {
+    background-color: var(--color-primary-light);
+  }
+  .btn-primary:focus {
+    --tw-ring-color: var(--color-primary);
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
+    background-color: var(--color-bg-subtle);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+  }
+  .btn-secondary:hover {
+    background-color: var(--color-border);
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
+    background-color: var(--color-danger);
+  }
+  .btn-danger:hover {
+    opacity: 0.9;
+  }
+
+  .card {
+    @apply rounded-xl bg-white p-4 shadow-sm;
+    border: 1px solid var(--color-border);
+  }
+
+  .input {
+    @apply w-full rounded-lg px-3 py-2 text-sm outline-none transition-colors;
+    border: 1px solid var(--color-border);
+    background-color: white;
+    color: var(--color-text);
+  }
+  .input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
+  }
+
+  .label {
+    @apply mb-1 block text-sm font-medium;
+    color: var(--color-text);
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply badge;
+    background-color: #dcfce7;
+    color: var(--color-success);
+  }
+
+  .badge-danger {
+    @apply badge;
+    background-color: #fee2e2;
+    color: var(--color-danger);
+  }
+
+  .badge-warning {
+    @apply badge;
+    background-color: #fef3c7;
+    color: var(--color-warning);
+  }
+
+  .badge-neutral {
+    @apply badge;
+    background-color: var(--color-bg-subtle);
+    color: var(--color-text-muted);
+  }
+
+  .badge-primary {
+    @apply badge;
+    color: white;
+    background-color: var(--color-primary);
+  }
+}

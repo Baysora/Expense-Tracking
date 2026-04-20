@@ -1,0 +1,165 @@
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/AuthContext";
+import { DEV_MODE, setDevCredentials, setDevUser } from "@/lib/auth";
+import { getRoleHome } from "@/lib/router";
+import { msalInstance, loginRequest, getClaimsFromAccount } from "@/lib/auth";
+import { userApi } from "@/lib/api";
+import { Role } from "@expense/shared";
+import { Loader2 } from "lucide-react";
+
+export function Login() {
+  const { user, setDevUser: setContextUser } = useAuth();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // If already logged in, redirect
+  if (user) {
+    navigate(getRoleHome(user.role), { replace: true });
+    return null;
+  }
+
+  async function handleDevLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const encoded = btoa(`${email}:${password}`);
+      const authHeader = `Bearer dev:${encoded}`;
+
+      const res = await fetch("/api/users", {
+        headers: { Authorization: authHeader },
+      });
+
+      if (!res.ok) {
+        setError("Invalid email or password");
+        return;
+      }
+
+      // Decode token claims from a lightweight endpoint
+      const meRes = await fetch("/api/me", { headers: { Authorization: authHeader } });
+      let claims = null;
+      if (meRes.ok) {
+        claims = await meRes.json();
+      } else {
+        // Fallback: parse from the users list (first entry matching email)
+        const users = await res.json();
+        const me = users.find((u: { email: string }) => u.email === email);
+        if (me) {
+          claims = {
+            userId: me.id,
+            email: me.email,
+            name: me.name,
+            role: me.role as Role,
+            opCoId: me.opCoId ?? null,
+          };
+        }
+      }
+
+      if (!claims) {
+        setError("Authentication failed");
+        return;
+      }
+
+      setDevCredentials({ email, password });
+      setDevUser(claims);
+      setContextUser(claims);
+      navigate(getRoleHome(claims.role as Role), { replace: true });
+    } catch {
+      setError("Connection failed. Ensure the API is running.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleB2CLogin() {
+    setLoading(true);
+    try {
+      await msalInstance.loginRedirect(loginRequest);
+    } catch {
+      setError("Login failed. Please try again.");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 px-4">
+      <div className="w-full max-w-sm">
+        {/* Logo */}
+        <div className="mb-8 text-center">
+          <div
+            className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl text-2xl font-bold text-white shadow-lg"
+            style={{ backgroundColor: "var(--color-accent)" }}
+          >
+            B
+          </div>
+          <h1 className="text-2xl font-bold text-white">Baysora Expenses</h1>
+          <p className="mt-1 text-sm text-white/60">Sign in to your account</p>
+        </div>
+
+        <div className="card">
+          {DEV_MODE ? (
+            <form onSubmit={handleDevLogin} className="space-y-4">
+              <div>
+                <label className="label" htmlFor="email">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  className="input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="admin@holdco.com"
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="password">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  className="input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="Admin@123!"
+                />
+              </div>
+              {error && (
+                <p className="text-sm font-medium" style={{ color: "var(--color-danger)" }}>
+                  {error}
+                </p>
+              )}
+              <button type="submit" disabled={loading} className="btn-primary w-full">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
+              </button>
+              <p className="text-center text-xs" style={{ color: "var(--color-text-muted)" }}>
+                Development mode
+              </p>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              {error && (
+                <p className="text-sm font-medium" style={{ color: "var(--color-danger)" }}>
+                  {error}
+                </p>
+              )}
+              <button onClick={handleB2CLogin} disabled={loading} className="btn-primary w-full">
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Sign in with Microsoft"
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

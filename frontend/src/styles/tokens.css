@@ -1,0 +1,17 @@
+/* Brand design tokens — update these when Baysora brand colors are confirmed */
+:root {
+  --color-primary:       #1E3A5F;
+  --color-primary-light: #2E5C8E;
+  --color-accent:        #C9A84C;
+  --color-bg:            #FFFFFF;
+  --color-bg-subtle:     #F7F8FA;
+  --color-text:          #1A1A2E;
+  --color-text-muted:    #6B7280;
+  --color-border:        #E5E7EB;
+  --color-success:       #16A34A;
+  --color-danger:        #DC2626;
+  --color-warning:       #D97706;
+}
+
+/* Google Fonts — Inter */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");

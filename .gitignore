@@ -1,0 +1,31 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.*.local
+*.log
+
+# Azure Functions
+api/dist/
+api/.funcignore
+
+# Prisma
+api/prisma/generated/
+
+# Frontend build
+frontend/dist/
+
+# Azure local settings
+api/local.settings.json
+
+# Azurite local emulator
+.azurite/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/

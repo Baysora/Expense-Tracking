@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model OpCo {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users      User[]
+  categories ExpenseCategory[]
+  expenses   Expense[]
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String
+  role        String
+  passwordHash String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  opCoId String?
+  opCo   OpCo?   @relation(fields: [opCoId], references: [id])
+
+  submittedExpenses Expense[]        @relation("SubmittedBy")
+  approvalRecords   ApprovalRecord[]
+}
+
+model ExpenseCategory {
+  id       String  @id @default(cuid())
+  name     String
+  isActive Boolean @default(true)
+
+  opCoId   String
+  opCo     OpCo      @relation(fields: [opCoId], references: [id])
+  expenses Expense[]
+
+  @@unique([opCoId, name])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  amount      Decimal  @db.Decimal(12, 2)
+  currency    String   @default("USD")
+  status      String   @default("DRAFT")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categoryId String
+  category   ExpenseCategory @relation(fields: [categoryId], references: [id])
+
+  submittedById String
+  submittedBy   User   @relation("SubmittedBy", fields: [submittedById], references: [id])
+
+  opCoId String
+  opCo   OpCo   @relation(fields: [opCoId], references: [id])
+
+  attachments     ExpenseAttachment[]
+  approvalRecords ApprovalRecord[]
+
+  @@index([opCoId, status])
+  @@index([submittedById])
+}
+
+model ExpenseAttachment {
+  id         String   @id @default(cuid())
+  type       String
+  fileName   String
+  blobName   String
+  mimeType   String
+  sizeBytes  Int
+  uploadedAt DateTime @default(now())
+
+  expenseId String
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+}
+
+model ApprovalRecord {
+  id        String   @id @default(cuid())
+  action    String
+  comment   String?
+  createdAt DateTime @default(now())
+
+  expenseId String
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  reviewedById String
+  reviewedBy   User   @relation(fields: [reviewedById], references: [id])
+}
