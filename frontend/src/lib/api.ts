@@ -106,7 +106,7 @@ export const categoryApi = {
   },
   create: (data: CreateCategoryRequest) =>
     request<ExpenseCategory>("/categories", { method: "POST", body: JSON.stringify(data) }),
-  update: (id: string, data: Partial<ExpenseCategory> & { isShared?: boolean; requiresAttachment?: boolean }) =>
+  update: (id: string, data: Partial<ExpenseCategory> & { isShared?: boolean }) =>
     request<ExpenseCategory>(`/categories/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),

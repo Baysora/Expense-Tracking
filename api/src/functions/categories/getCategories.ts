@@ -29,10 +29,14 @@ app.http("getCategories", {
     }
 
     // Return OpCo-specific categories + shared categories (stored under HoldCo Internal)
+    // HOLDCO_ADMIN sees ACTIVE + INACTIVE; all other roles see ACTIVE only
     const holdCoOpCoId = await getHoldCoOpCoId();
+    const statusFilter = claims.role === Role.HOLDCO_ADMIN
+      ? { in: ["ACTIVE", "INACTIVE"] }
+      : "ACTIVE";
     const categories = await prisma.expenseCategory.findMany({
       where: {
-        isActive: true,
+        status: statusFilter,
         OR: [
           { opCoId },
           { isShared: true, opCoId: holdCoOpCoId },
