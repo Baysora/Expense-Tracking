@@ -11,6 +11,9 @@ param sqlAdminLogin string = 'sqladmin'
 @description('SQL Server administrator password')
 param sqlAdminPassword string
 
+@description('Object ID of the deploying principal (for Key Vault access policy)')
+param deployerObjectId string
+
 @description('Unique suffix for globally unique resource names')
 param uniqueSuffix string = substring(uniqueString(resourceGroup().id), 0, 6)
 
@@ -57,6 +60,16 @@ module functionApp './modules/functionapp.bicep' = {
   }
 }
 
+module kv './modules/keyvault.bicep' = {
+  name: 'keyvault-deployment'
+  params: {
+    location: location
+    vaultName: 'kv-expense-${uniqueSuffix}'
+    deployerObjectId: deployerObjectId
+    sqlPassword: sqlAdminPassword
+  }
+}
+
 output staticWebAppUrl string = swa.outputs.defaultHostname
 output staticWebAppName string = swa.outputs.swaName
 output functionAppUrl string = functionApp.outputs.defaultHostname
@@ -64,3 +77,5 @@ output sqlServerName string = sql.outputs.serverName
 output sqlConnectionString string = sql.outputs.connectionString
 output storageAccountName string = storage.outputs.accountName
 output storageConnectionString string = storage.outputs.connectionString
+output keyVaultName string = kv.outputs.vaultName
+output keyVaultUri string = kv.outputs.vaultUri
