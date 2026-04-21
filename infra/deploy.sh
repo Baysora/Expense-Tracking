@@ -26,6 +26,7 @@ ENTRA_TENANT=""
 ENTRA_CLIENT_ID=""
 ENTRA_AUDIENCE=""
 ENTRA_API_SCOPE=""
+SQL_LOCATION=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -36,6 +37,7 @@ while [[ $# -gt 0 ]]; do
     --entra-client-id)  ENTRA_CLIENT_ID="$2";  shift 2 ;;
     --entra-audience)   ENTRA_AUDIENCE="$2";   shift 2 ;;
     --entra-api-scope)  ENTRA_API_SCOPE="$2";  shift 2 ;;
+    --sql-location)     SQL_LOCATION="$2";     shift 2 ;;
     *) echo "Unknown argument: $1"; exit 1 ;;
   esac
 done
@@ -70,6 +72,8 @@ OUTPUTS=$(az deployment group create \
   --template-file "$SCRIPT_DIR/main.bicep" \
   --parameters "$SCRIPT_DIR/parameters/${ENVIRONMENT}.bicepparam" \
   --parameters sqlAdminPassword="$SQL_PASSWORD" deployerObjectId="$DEPLOYER_OID" \
+    sqlServerName="expense-tracking-${ENVIRONMENT}-sql-$(openssl rand -hex 3)" \
+    ${SQL_LOCATION:+sqlLocation="$SQL_LOCATION"} \
   --query "properties.outputs" \
   --output json)
 

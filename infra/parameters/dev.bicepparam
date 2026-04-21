@@ -6,3 +6,4 @@ param sqlAdminLogin = 'sqladmin'
 // export AZURE_SQL_ADMIN_PASSWORD="YourSecurePass123!"
 // az deployment group create ... --parameters sqlAdminPassword=$AZURE_SQL_ADMIN_PASSWORD
 param sqlAdminPassword = ''
+param deployerObjectId = '' // overridden at deploy time by deploy.sh
