@@ -36,6 +36,11 @@ jobs:
         run: npx prisma generate
         working-directory: api
 
+      - name: Vendor shared package into api
+        run: |
+          rm -rf api/vendor_shared
+          cp -r packages/shared api/vendor_shared
+
       - name: Build frontend
         run: npm run build --workspace=frontend
         env:

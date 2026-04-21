@@ -9,6 +9,7 @@ build/
 # Azure Functions
 api/dist/
 api/.funcignore
+api/vendor_shared/
 
 # Prisma
 api/prisma/generated/
