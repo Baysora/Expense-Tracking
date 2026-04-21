@@ -13,6 +13,7 @@
     "rewrite": "/index.html",
     "exclude": [
       "/api/*",
+      "/assets/*",
       "/*.{css,js,png,jpg,jpeg,gif,svg,ico,woff,woff2,ttf,eot}"
     ]
   },
@@ -24,6 +25,10 @@
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
   },
   "mimeTypes": {
-    ".json": "application/json"
+    ".json": "application/json",
+    ".js": "text/javascript",
+    ".mjs": "text/javascript",
+    ".css": "text/css",
+    ".svg": "image/svg+xml"
   }
 }
