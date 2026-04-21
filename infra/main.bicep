@@ -58,6 +58,9 @@ module functionApp './modules/functionapp.bicep' = {
 }
 
 output staticWebAppUrl string = swa.outputs.defaultHostname
+output staticWebAppName string = swa.outputs.swaName
 output functionAppUrl string = functionApp.outputs.defaultHostname
 output sqlServerName string = sql.outputs.serverName
+output sqlConnectionString string = sql.outputs.connectionString
 output storageAccountName string = storage.outputs.accountName
+output storageConnectionString string = storage.outputs.connectionString
