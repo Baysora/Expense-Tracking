@@ -39,10 +39,9 @@ jobs:
       - name: Build frontend
         run: npm run build --workspace=frontend
         env:
-          VITE_B2C_TENANT_NAME: ${{ secrets.B2C_TENANT_NAME }}
-          VITE_B2C_POLICY_NAME: ${{ secrets.B2C_POLICY_NAME }}
-          VITE_B2C_CLIENT_ID: ${{ secrets.B2C_CLIENT_ID }}
-          VITE_API_SCOPE: ${{ secrets.B2C_API_SCOPE }}
+          VITE_ENTRA_TENANT_NAME: ${{ secrets.ENTRA_TENANT_NAME }}
+          VITE_ENTRA_CLIENT_ID: ${{ secrets.ENTRA_CLIENT_ID }}
+          VITE_API_SCOPE: ${{ secrets.ENTRA_API_SCOPE }}
           VITE_DEV_MODE: 'false'
 
       - name: Deploy to Azure Static Web Apps
@@ -59,10 +58,8 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
           AZURE_STORAGE_CONTAINER_NAME: expense-attachments
-          B2C_TENANT_NAME: ${{ secrets.B2C_TENANT_NAME }}
-          B2C_POLICY_NAME: ${{ secrets.B2C_POLICY_NAME }}
-          B2C_CLIENT_ID: ${{ secrets.B2C_CLIENT_ID }}
-          B2C_AUDIENCE: ${{ secrets.B2C_AUDIENCE }}
+          ENTRA_TENANT_NAME: ${{ secrets.ENTRA_TENANT_NAME }}
+          ENTRA_AUDIENCE: ${{ secrets.ENTRA_AUDIENCE }}
 
   close_pull_request:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'

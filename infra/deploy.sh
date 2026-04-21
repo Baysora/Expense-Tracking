@@ -11,11 +11,10 @@
 #     --resource-group  expense-tracking-dev \
 #     --environment     dev \
 #     --github-repo     Baysora/Expense-Tracking \
-#     [--b2c-tenant      mytenant.onmicrosoft.com] \
-#     [--b2c-policy      B2C_1_signupsignin] \
-#     [--b2c-client-id   xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx] \
-#     [--b2c-audience    xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx] \
-#     [--b2c-api-scope   "https://mytenant.onmicrosoft.com/expense-api/access_as_user"]
+#     [--entra-tenant    baysora] \
+#     [--entra-client-id xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx] \
+#     [--entra-audience  xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx] \
+#     [--entra-api-scope "https://baysora.onmicrosoft.com/expense-api/access_as_user"]
 
 set -euo pipefail
 
@@ -23,22 +22,20 @@ set -euo pipefail
 RESOURCE_GROUP=""
 ENVIRONMENT="dev"
 GITHUB_REPO=""
-B2C_TENANT=""
-B2C_POLICY="B2C_1_signupsignin"
-B2C_CLIENT_ID=""
-B2C_AUDIENCE=""
-B2C_API_SCOPE=""
+ENTRA_TENANT=""
+ENTRA_CLIENT_ID=""
+ENTRA_AUDIENCE=""
+ENTRA_API_SCOPE=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --resource-group)  RESOURCE_GROUP="$2";  shift 2 ;;
-    --environment)     ENVIRONMENT="$2";     shift 2 ;;
-    --github-repo)     GITHUB_REPO="$2";     shift 2 ;;
-    --b2c-tenant)      B2C_TENANT="$2";      shift 2 ;;
-    --b2c-policy)      B2C_POLICY="$2";      shift 2 ;;
-    --b2c-client-id)   B2C_CLIENT_ID="$2";   shift 2 ;;
-    --b2c-audience)    B2C_AUDIENCE="$2";    shift 2 ;;
-    --b2c-api-scope)   B2C_API_SCOPE="$2";   shift 2 ;;
+    --resource-group)   RESOURCE_GROUP="$2";   shift 2 ;;
+    --environment)      ENVIRONMENT="$2";      shift 2 ;;
+    --github-repo)      GITHUB_REPO="$2";      shift 2 ;;
+    --entra-tenant)     ENTRA_TENANT="$2";     shift 2 ;;
+    --entra-client-id)  ENTRA_CLIENT_ID="$2";  shift 2 ;;
+    --entra-audience)   ENTRA_AUDIENCE="$2";   shift 2 ;;
+    --entra-api-scope)  ENTRA_API_SCOPE="$2";  shift 2 ;;
     *) echo "Unknown argument: $1"; exit 1 ;;
   esac
 done
@@ -54,7 +51,6 @@ done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ── Auto-generate a strong SQL password ─────────────────────────────────────
-# 32 chars, base64 gives [A-Za-z0-9+/] — meets SQL Server complexity rules
 SQL_PASSWORD="$(openssl rand -base64 32 | tr -d '\n')"
 echo "▶ Generated SQL admin password (will be stored in Key Vault)"
 
@@ -89,8 +85,7 @@ echo "  Static Web App : $SWA_NAME"
 echo "  URL            : https://$SWA_URL"
 echo "  Key Vault      : $KV_NAME"
 echo ""
-echo "  SQL password stored in Key Vault secret 'sql-admin-password'"
-echo "  Retrieve it any time with:"
+echo "  SQL password stored in Key Vault — retrieve with:"
 echo "    az keyvault secret show --vault-name $KV_NAME --name sql-admin-password --query value -o tsv"
 
 # ── Get SWA deployment token ─────────────────────────────────────────────────
@@ -108,12 +103,11 @@ gh secret set AZURE_STATIC_WEB_APPS_API_TOKEN --body "$SWA_TOKEN"    --repo "$GI
 gh secret set DATABASE_URL                    --body "$SQL_CONN"      --repo "$GITHUB_REPO"
 gh secret set AZURE_STORAGE_CONNECTION_STRING --body "$STORAGE_CONN" --repo "$GITHUB_REPO"
 
-# B2C secrets — only set if provided
-if [[ -n "$B2C_TENANT" ]];    then gh secret set B2C_TENANT_NAME  --body "$B2C_TENANT"    --repo "$GITHUB_REPO"; fi
-if [[ -n "$B2C_POLICY" ]];    then gh secret set B2C_POLICY_NAME  --body "$B2C_POLICY"    --repo "$GITHUB_REPO"; fi
-if [[ -n "$B2C_CLIENT_ID" ]]; then gh secret set B2C_CLIENT_ID    --body "$B2C_CLIENT_ID" --repo "$GITHUB_REPO"; fi
-if [[ -n "$B2C_AUDIENCE" ]];  then gh secret set B2C_AUDIENCE     --body "$B2C_AUDIENCE"  --repo "$GITHUB_REPO"; fi
-if [[ -n "$B2C_API_SCOPE" ]]; then gh secret set B2C_API_SCOPE    --body "$B2C_API_SCOPE" --repo "$GITHUB_REPO"; fi
+# Entra External ID secrets — only set if provided
+if [[ -n "$ENTRA_TENANT" ]];    then gh secret set ENTRA_TENANT_NAME --body "$ENTRA_TENANT"    --repo "$GITHUB_REPO"; fi
+if [[ -n "$ENTRA_CLIENT_ID" ]]; then gh secret set ENTRA_CLIENT_ID   --body "$ENTRA_CLIENT_ID" --repo "$GITHUB_REPO"; fi
+if [[ -n "$ENTRA_AUDIENCE" ]];  then gh secret set ENTRA_AUDIENCE    --body "$ENTRA_AUDIENCE"  --repo "$GITHUB_REPO"; fi
+if [[ -n "$ENTRA_API_SCOPE" ]]; then gh secret set ENTRA_API_SCOPE   --body "$ENTRA_API_SCOPE" --repo "$GITHUB_REPO"; fi
 
 echo ""
 echo "✅ Done! All secrets set. Push to main to trigger a deployment."

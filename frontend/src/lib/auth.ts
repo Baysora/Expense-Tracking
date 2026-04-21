@@ -1,23 +1,23 @@
 import { Configuration, PublicClientApplication, AccountInfo } from "@azure/msal-browser";
 import { Role, TokenClaims } from "@expense/shared";
 
-const B2C_TENANT = import.meta.env.VITE_B2C_TENANT_NAME ?? "";
-const B2C_POLICY = import.meta.env.VITE_B2C_POLICY_NAME ?? "B2C_1_signupsignin";
-const B2C_CLIENT_ID = import.meta.env.VITE_B2C_CLIENT_ID ?? "";
+const ENTRA_TENANT = import.meta.env.VITE_ENTRA_TENANT_NAME ?? "";
+const ENTRA_CLIENT_ID = import.meta.env.VITE_ENTRA_CLIENT_ID ?? "";
 const API_SCOPE = import.meta.env.VITE_API_SCOPE ?? "";
 const DEV_MODE = import.meta.env.VITE_DEV_MODE === "true";
 
 export const msalConfig: Configuration = {
   auth: {
-    clientId: B2C_CLIENT_ID || "dev-client-id",
-    authority: `https://${B2C_TENANT}.b2clogin.com/${B2C_TENANT}.onmicrosoft.com/${B2C_POLICY}`,
-    knownAuthorities: [`${B2C_TENANT}.b2clogin.com`],
+    clientId: ENTRA_CLIENT_ID || "dev-client-id",
+    // Entra External ID (CIAM) — no policy slug in authority
+    authority: `https://${ENTRA_TENANT}.ciamlogin.com/${ENTRA_TENANT}.onmicrosoft.com/`,
+    knownAuthorities: [`${ENTRA_TENANT}.ciamlogin.com`],
     redirectUri: window.location.origin,
     postLogoutRedirectUri: window.location.origin,
   },
   cache: {
     cacheLocation: "sessionStorage",
-    storeAuthStateInCookie: true, // IE11 / Edge compatibility
+    storeAuthStateInCookie: true,
   },
 };
 
@@ -29,18 +29,20 @@ export const msalInstance = new PublicClientApplication(msalConfig);
 
 export function getClaimsFromAccount(account: AccountInfo | null): TokenClaims | null {
   if (!account) return null;
-  const idTokenClaims = account.idTokenClaims as Record<string, unknown> | undefined;
+  const claims = account.idTokenClaims as Record<string, unknown> | undefined;
 
   return {
     userId: account.localAccountId,
-    email: account.username,
+    // Entra External ID surfaces email as `email` claim; fall back to username (UPN)
+    email: (claims?.["email"] as string) ?? account.username,
     name: account.name ?? "",
-    role: (idTokenClaims?.["extension_role"] as Role) ?? Role.OPCO_USER,
-    opCoId: (idTokenClaims?.["extension_opCoId"] as string) || null,
+    role: (claims?.["extension_role"] as Role) ?? Role.OPCO_USER,
+    opCoId: (claims?.["extension_opCoId"] as string) || null,
   };
 }
 
-// Dev-mode auth: stores credentials in sessionStorage for API calls
+// ── Dev-mode auth (local only, VITE_DEV_MODE=true) ──────────────────────────
+
 export interface DevCredentials {
   email: string;
   password: string;

@@ -66,7 +66,7 @@ cp api/local.settings.json.example api/local.settings.json
 
 # 3. Configure frontend
 cp frontend/.env.example frontend/.env
-# Set VITE_DEV_MODE=true (skips Azure B2C, uses dev bearer tokens)
+# VITE_DEV_MODE=true is already set — skips Entra, uses dev bearer tokens
 
 # 4. Initialize DB and seed
 cd api && npx prisma db push && npx prisma db seed && cd ..
@@ -94,7 +94,7 @@ Both `api` and `frontend` import from `@expense/shared` — **always build share
 
 - **Runtime**: Azure Functions v4 (HTTP triggers) in production; Express server (`localServer.ts`) for local dev
 - **ORM**: Prisma with SQL Server — schema at `api/prisma/schema.prisma`
-- **Auth**: JWT verification (`lib/auth.ts`); `DEV_MODE=true` bypasses Azure B2C and accepts `Bearer dev:<base64(email:password)>` tokens
+- **Auth**: JWT verification (`lib/auth.ts`); `DEV_MODE=true` bypasses Entra External ID and accepts `Bearer dev:<base64(email:password)>` tokens
 - **Validation**: Zod schemas on all function inputs
 - **File storage**: Azure Blob Storage with SAS URL access (`lib/blob.ts`)
 - **Function registration**: All HTTP handlers registered in `api/src/index.ts`
@@ -116,7 +116,7 @@ Functions are organized by domain under `api/src/functions/`:
 - **Styling**: Tailwind CSS with custom tokens in `src/styles/`
 - **Data fetching**: TanStack React Query v5
 
-In `VITE_DEV_MODE=true`, the Login page generates dev bearer tokens — no Azure B2C needed.
+In `VITE_DEV_MODE=true`, the Login page generates dev bearer tokens — no Entra needed.
 
 ### Data Model (Prisma)
 
@@ -128,7 +128,21 @@ Expense lifecycle: `DRAFT → SUBMITTED → APPROVED | REJECTED`.
 
 ### Auth Flow
 
+**Production**: Microsoft Entra External ID (CIAM). Frontend uses MSAL (`@azure/msal-browser`) with authority `https://<tenant>.ciamlogin.com/<tenant>.onmicrosoft.com/`. API verifies RS256 JWTs against the CIAM JWKS endpoint. Custom token claims `extension_role` and `extension_opCoId` must be configured in the Entra External ID tenant and added to the token via a custom claims policy.
+
+**Local dev** (`DEV_MODE=true`): Bypasses Entra entirely. Frontend sends `Bearer dev:<base64(email:password)>`, API looks up the user in the DB and verifies bcrypt password hash.
+
 Role-based access is enforced server-side via `verifyToken()` + `requireRoles()` in `api/src/lib/auth.ts`. Frontend routing uses the same role values from `AuthContext` to gate page access.
+
+### Entra External ID Setup (production)
+
+When setting up the Entra External ID tenant:
+1. Register two app registrations: one for the SPA (frontend), one for the API
+2. Expose an API scope on the API registration (e.g. `access_as_user`)
+3. Add `access_as_user` as a delegated permission on the SPA registration
+4. Create custom user attributes: `role` (String) and `opCoId` (String)
+5. Add both attributes to the sign-in user flow and include them in the token
+6. Set env vars: `ENTRA_TENANT_NAME`, `ENTRA_AUDIENCE` (API client ID) on the API; `VITE_ENTRA_TENANT_NAME`, `VITE_ENTRA_CLIENT_ID`, `VITE_API_SCOPE` on the frontend
 
 ### Deployment
 
