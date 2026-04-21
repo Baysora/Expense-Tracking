@@ -79,7 +79,7 @@ function ApprovalCard({ expense }: { expense: Expense }) {
 export function OpcoApprovals() {
   const { data: expenses, isLoading } = useQuery({
     queryKey: ["expenses-submitted"],
-    queryFn: () => expenseApi.list("SUBMITTED"),
+    queryFn: () => expenseApi.list({ status: "SUBMITTED" }),
   });
 
   if (isLoading) {
