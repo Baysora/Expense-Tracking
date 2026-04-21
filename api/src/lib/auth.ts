@@ -13,7 +13,6 @@ let jwksClientInstance: ReturnType<typeof jwksClient> | null = null;
 
 function getJwksClient() {
   if (!jwksClientInstance && ENTRA_TENANT) {
-    // Entra External ID (CIAM) JWKS endpoint — no policy slug
     jwksClientInstance = jwksClient({
       jwksUri: `https://${ENTRA_TENANT}.ciamlogin.com/${ENTRA_TENANT}.onmicrosoft.com/discovery/v2.0/keys`,
       cache: true,
@@ -32,9 +31,7 @@ async function getSigningKey(kid: string): Promise<string> {
 }
 
 export async function verifyToken(req: HttpRequest): Promise<TokenClaims | null> {
-  if (DEV_MODE) {
-    return verifyDevToken(req);
-  }
+  if (DEV_MODE) return verifyDevToken(req);
 
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
@@ -42,9 +39,9 @@ export async function verifyToken(req: HttpRequest): Promise<TokenClaims | null>
   const token = authHeader.slice(7);
 
   try {
+    // 1. Verify JWT signature — proves the user authenticated via Entra External ID
     const decoded = jwt.decode(token, { complete: true });
     if (!decoded || typeof decoded === "string") return null;
-
     const kid = decoded.header.kid;
     if (!kid) return null;
 
@@ -54,13 +51,24 @@ export async function verifyToken(req: HttpRequest): Promise<TokenClaims | null>
       audience: ENTRA_AUDIENCE,
     }) as Record<string, unknown>;
 
+    // 2. Extract email — Entra External ID uses `email` or `preferred_username`
+    const email = (payload["email"] as string) ?? (payload["preferred_username"] as string);
+    if (!email) return null;
+
+    // 3. Look up user in our DB for role + opCoId — no custom token claims needed
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, name: true, role: true, opCoId: true, isActive: true },
+    });
+
+    if (!user || !user.isActive) return null;
+
     return {
-      userId: payload["sub"] as string,
-      // Entra External ID uses `email` claim (not `emails[]` array like B2C)
-      email: (payload["email"] as string) ?? (payload["preferred_username"] as string) ?? "",
-      name: (payload["name"] as string) ?? "",
-      role: (payload["extension_role"] as Role) ?? Role.OPCO_USER,
-      opCoId: (payload["extension_opCoId"] as string) || null,
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role as Role,
+      opCoId: user.opCoId,
     };
   } catch {
     return null;

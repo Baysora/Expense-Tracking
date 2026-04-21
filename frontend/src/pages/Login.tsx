@@ -8,12 +8,12 @@ import { Role } from "@expense/shared";
 import { Loader2 } from "lucide-react";
 
 export function Login() {
-  const { user, setDevUser: setContextUser } = useAuth();
+  const { user, authError, setDevUser: setContextUser } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(authError);
 
   // If already logged in, redirect
   if (user) {
