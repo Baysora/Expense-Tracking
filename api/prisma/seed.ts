@@ -107,7 +107,7 @@ async function main() {
     await prisma.expenseCategory.upsert({
       where: { opCoId_name: { opCoId: holdco.id, name } },
       update: {},
-      create: { name, opCoId: holdco.id, isShared: true, isActive: true },
+      create: { name, opCoId: holdco.id, isShared: true },
     });
   }
 
@@ -117,7 +117,7 @@ async function main() {
     await prisma.expenseCategory.upsert({
       where: { opCoId_name: { opCoId: acme.id, name } },
       update: {},
-      create: { name, opCoId: acme.id, isActive: true },
+      create: { name, opCoId: acme.id },
     });
   }
 
@@ -127,7 +127,7 @@ async function main() {
     await prisma.expenseCategory.upsert({
       where: { opCoId_name: { opCoId: globex.id, name } },
       update: {},
-      create: { name, opCoId: globex.id, isActive: true },
+      create: { name, opCoId: globex.id },
     });
   }
 
