@@ -12,7 +12,7 @@
   "dependencies": {
     "@azure/msal-browser": "^3.27.0",
     "@azure/msal-react": "^2.1.0",
-    "@expense/shared": "*",
+    "@expense/shared": "file:../packages/shared",
     "@tanstack/react-query": "^5.62.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.460.0",
