@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Role } from "@expense/shared";
 import { verifyToken, requireRoles } from "../../lib/auth";
 import { prisma } from "../../lib/prisma";
+import { getHoldCoOpCoId } from "../../lib/opco";
 import { created, unauthorized, forbidden, badRequest } from "../../lib/errors";
 
 const schema = z.object({
@@ -20,16 +21,29 @@ app.http("createExpense", {
   handler: async (req: HttpRequest) => {
     const claims = await verifyToken(req);
     if (!claims) return unauthorized();
-    if (!requireRoles(claims, Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER)) return forbidden();
-    if (!claims.opCoId) return forbidden("No OpCo associated with this account");
+    if (!requireRoles(claims, Role.HOLDCO_ADMIN, Role.HOLDCO_USER, Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER)) return forbidden();
 
     const body = await req.json().catch(() => null);
     const parsed = schema.safeParse(body);
     if (!parsed.success) return badRequest(parsed.error.errors[0].message);
 
-    // Verify category belongs to user's OpCo
+    // Resolve opCoId for HoldCo roles
+    let opCoId = claims.opCoId;
+    if (!opCoId) {
+      if (claims.role === Role.HOLDCO_ADMIN || claims.role === Role.HOLDCO_USER) {
+        opCoId = await getHoldCoOpCoId();
+      } else {
+        return forbidden("No OpCo associated with this account");
+      }
+    }
+
+    // Verify category belongs to user's OpCo or is shared
     const category = await prisma.expenseCategory.findFirst({
-      where: { id: parsed.data.categoryId, opCoId: claims.opCoId, isActive: true },
+      where: {
+        id: parsed.data.categoryId,
+        isActive: true,
+        OR: [{ opCoId }, { isShared: true }],
+      },
     });
     if (!category) return badRequest("Invalid or inactive category");
 
@@ -41,7 +55,7 @@ app.http("createExpense", {
         currency: parsed.data.currency,
         categoryId: parsed.data.categoryId,
         submittedById: claims.userId,
-        opCoId: claims.opCoId,
+        opCoId,
         status: "DRAFT",
       },
       include: { category: { select: { name: true } } },

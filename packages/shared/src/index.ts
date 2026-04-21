@@ -1,5 +1,6 @@
 export enum Role {
   HOLDCO_ADMIN = "HOLDCO_ADMIN",
+  HOLDCO_USER = "HOLDCO_USER",
   OPCO_ADMIN = "OPCO_ADMIN",
   OPCO_MANAGER = "OPCO_MANAGER",
   OPCO_USER = "OPCO_USER",
@@ -22,6 +23,9 @@ export interface OpCo {
   name: string;
   slug: string;
   isActive: boolean;
+  isHoldCo: boolean;
+  requireAttachmentForAll: boolean;
+  requireAttachmentAboveAmount: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -42,6 +46,8 @@ export interface ExpenseCategory {
   name: string;
   opCoId: string;
   isActive: boolean;
+  isShared: boolean;
+  requiresAttachment: boolean;
 }
 
 export interface Expense {
@@ -52,6 +58,7 @@ export interface Expense {
   currency: string;
   status: ExpenseStatus;
   opCoId: string;
+  opCoName?: string;
   categoryId: string;
   categoryName?: string;
   submittedById: string;
@@ -111,6 +118,23 @@ export interface ReviewExpenseRequest {
 
 export interface CreateCategoryRequest {
   name: string;
+  opCoId: string;
+  isShared?: boolean;
+  requiresAttachment?: boolean;
+}
+
+export interface CopyCategoriesRequest {
+  sourceOpCoId: string;
+  targetOpCoIds: string[] | "all";
+}
+
+export interface ExportExpensesParams {
+  opCoId?: string;
+  userId?: string;
+  status?: string;
+  format?: "csv" | "zip";
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface ApiError {

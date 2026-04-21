@@ -8,9 +8,10 @@ import { ChevronRight, Paperclip } from "lucide-react";
 interface ExpenseTableProps {
   expenses: Expense[];
   showSubmitter?: boolean;
+  showOpCo?: boolean;
 }
 
-export function ExpenseTable({ expenses, showSubmitter = false }: ExpenseTableProps) {
+export function ExpenseTable({ expenses, showSubmitter = false, showOpCo = false }: ExpenseTableProps) {
   if (expenses.length === 0) {
     return (
       <div className="card flex flex-col items-center justify-center py-12 text-center">
@@ -34,6 +35,11 @@ export function ExpenseTable({ expenses, showSubmitter = false }: ExpenseTablePr
               <th className="px-4 py-3 text-left font-semibold" style={{ color: "var(--color-text-muted)" }}>
                 Title
               </th>
+              {showOpCo && (
+                <th className="px-4 py-3 text-left font-semibold" style={{ color: "var(--color-text-muted)" }}>
+                  OpCo
+                </th>
+              )}
               {showSubmitter && (
                 <th className="px-4 py-3 text-left font-semibold" style={{ color: "var(--color-text-muted)" }}>
                   Submitted By
@@ -66,6 +72,11 @@ export function ExpenseTable({ expenses, showSubmitter = false }: ExpenseTablePr
                     {expense.title}
                   </span>
                 </td>
+                {showOpCo && (
+                  <td className="px-4 py-3" style={{ color: "var(--color-text-muted)" }}>
+                    {expense.opCoName}
+                  </td>
+                )}
                 {showSubmitter && (
                   <td className="px-4 py-3" style={{ color: "var(--color-text-muted)" }}>
                     {expense.submittedByName}
@@ -113,6 +124,11 @@ export function ExpenseTable({ expenses, showSubmitter = false }: ExpenseTablePr
               <p className="mt-0.5 text-xs" style={{ color: "var(--color-text-muted)" }}>
                 {expense.categoryName} · {formatDate(expense.createdAt)}
               </p>
+              {showOpCo && (
+                <p className="mt-0.5 text-xs" style={{ color: "var(--color-text-muted)" }}>
+                  {expense.opCoName}
+                </p>
+              )}
               {showSubmitter && (
                 <p className="mt-0.5 text-xs" style={{ color: "var(--color-text-muted)" }}>
                   By {expense.submittedByName}

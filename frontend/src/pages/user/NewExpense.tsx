@@ -1,15 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { expenseApi, categoryApi } from "@/lib/api";
+import { expenseApi, categoryApi, opcoApi } from "@/lib/api";
 import { AttachmentUpload } from "@/components/expenses/AttachmentUpload";
-import { ExpenseAttachment } from "@expense/shared";
-import { Loader2, ArrowLeft, Send, Save } from "lucide-react";
+import { ExpenseAttachment, Role } from "@expense/shared";
+import { useAuth } from "@/lib/AuthContext";
+import { Loader2, ArrowLeft, Send, Save, Paperclip } from "lucide-react";
 
 type Step = "details" | "attachments" | "review";
 
 export function NewExpense() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState<Step>("details");
   const [expenseId, setExpenseId] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<(ExpenseAttachment & { sasUrl?: string })[]>([]);
@@ -23,10 +25,35 @@ export function NewExpense() {
     categoryId: "",
   });
 
+  const isHoldCoRole = user?.role === Role.HOLDCO_ADMIN || user?.role === Role.HOLDCO_USER;
+
   const { data: categories, isLoading: catLoading } = useQuery({
     queryKey: ["categories"],
-    queryFn: categoryApi.list,
+    queryFn: () => categoryApi.list(),
   });
+
+  const { data: opcos } = useQuery({
+    queryKey: ["opcos"],
+    queryFn: opcoApi.list,
+    enabled: isHoldCoRole,
+  });
+
+  // Determine if attachment is required based on selected category and OpCo rules
+  const selectedCategory = categories?.find((c) => c.id === form.categoryId);
+  const userOpCo = useMemo(() => {
+    if (!opcos) return null;
+    if (isHoldCoRole) return opcos.find((o) => o.isHoldCo) ?? null;
+    return null;
+  }, [opcos, isHoldCoRole]);
+
+  const attachmentRequired = useMemo(() => {
+    if (!form.categoryId || !form.amount) return false;
+    const amount = parseFloat(form.amount);
+    if (selectedCategory?.requiresAttachment) return true;
+    if (userOpCo?.requireAttachmentForAll) return true;
+    if (userOpCo?.requireAttachmentAboveAmount != null && amount > userOpCo.requireAttachmentAboveAmount) return true;
+    return false;
+  }, [selectedCategory, userOpCo, form.amount, form.categoryId]);
 
   const create = useMutation({
     mutationFn: expenseApi.create,
@@ -54,6 +81,8 @@ export function NewExpense() {
       categoryId: form.categoryId,
     });
   }
+
+  const canSubmit = !attachmentRequired || attachments.length > 0;
 
   return (
     <div className="space-y-6">
@@ -186,6 +215,16 @@ export function NewExpense() {
               Upload your supporting documents. Accepted: PDF, JPEG, PNG, HEIC, TIFF, and other common formats (max 10 MB each).
             </p>
           </div>
+
+          {attachmentRequired && attachments.length === 0 && (
+            <div className="flex items-start gap-2 rounded-lg border p-3 text-sm" style={{ borderColor: "var(--color-warning, #d97706)", backgroundColor: "rgba(217,119,6,0.08)" }}>
+              <Paperclip className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: "#d97706" }} />
+              <p style={{ color: "#92400e" }}>
+                An attachment (receipt or invoice) is required for this expense. Please upload at least one file before submitting.
+              </p>
+            </div>
+          )}
+
           <AttachmentUpload
             expenseId={expenseId}
             attachments={attachments}
@@ -222,15 +261,28 @@ export function NewExpense() {
               </div>
               <div>
                 <dt className="font-medium" style={{ color: "var(--color-text-muted)" }}>Attachments</dt>
-                <dd style={{ color: "var(--color-text)" }}>{attachments.length} file{attachments.length !== 1 ? "s" : ""}</dd>
+                <dd style={{ color: attachmentRequired && attachments.length === 0 ? "var(--color-danger)" : "var(--color-text)" }}>
+                  {attachments.length} file{attachments.length !== 1 ? "s" : ""}
+                  {attachmentRequired && attachments.length === 0 && " — required!"}
+                </dd>
               </div>
             </dl>
           </div>
+
+          {attachmentRequired && attachments.length === 0 && (
+            <div className="flex items-start gap-2 rounded-lg border p-3 text-sm" style={{ borderColor: "var(--color-warning, #d97706)", backgroundColor: "rgba(217,119,6,0.08)" }}>
+              <Paperclip className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: "#d97706" }} />
+              <p style={{ color: "#92400e" }}>
+                This expense requires an attachment. Go back to the Attachments step and upload at least one file.
+              </p>
+            </div>
+          )}
+
           {error && <p className="text-sm" style={{ color: "var(--color-danger)" }}>{error}</p>}
           <div className="flex flex-col gap-2 sm:flex-row">
             <button
               onClick={() => submit.mutate(expenseId)}
-              disabled={submit.isPending}
+              disabled={submit.isPending || !canSubmit}
               className="btn-primary"
             >
               {submit.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

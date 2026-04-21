@@ -8,6 +8,8 @@ import { ok, unauthorized, forbidden, badRequest, notFound } from "../../lib/err
 const schema = z.object({
   name: z.string().min(1).max(100).optional(),
   isActive: z.boolean().optional(),
+  requireAttachmentForAll: z.boolean().optional(),
+  requireAttachmentAboveAmount: z.number().positive().nullable().optional(),
 });
 
 app.http("updateOpCo", {

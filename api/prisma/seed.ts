@@ -6,8 +6,14 @@ const prisma = new PrismaClient();
 async function main() {
   const password = await bcrypt.hash("Admin@123!", 12);
 
-  // ── OpCos ────────────────────────────────────────────────────────────────
+  // ── HoldCo Internal OpCo ─────────────────────────────────────────────────
+  const holdco = await prisma.opCo.upsert({
+    where: { slug: "baysora-holdco" },
+    update: {},
+    create: { name: "Baysora HoldCo", slug: "baysora-holdco", isHoldCo: true, isActive: true },
+  });
 
+  // ── OpCos ─────────────────────────────────────────────────────────────────
   const acme = await prisma.opCo.upsert({
     where: { slug: "acme-corp" },
     update: {},
@@ -20,8 +26,7 @@ async function main() {
     create: { name: "Globex Inc", slug: "globex-inc", isActive: true },
   });
 
-  // ── Users ─────────────────────────────────────────────────────────────────
-
+  // ── HoldCo Users ──────────────────────────────────────────────────────────
   await prisma.user.upsert({
     where: { email: "admin@holdco.com" },
     update: {},
@@ -35,91 +40,78 @@ async function main() {
   });
 
   await prisma.user.upsert({
-    where: { email: "opco.admin@acme.com" },
+    where: { email: "holdco.user@holdco.com" },
     update: {},
     create: {
-      email: "opco.admin@acme.com",
-      name: "Acme Admin",
+      email: "holdco.user@holdco.com",
+      name: "HoldCo Employee",
       passwordHash: password,
-      role: "OPCO_ADMIN",
-      opCoId: acme.id,
+      role: "HOLDCO_USER",
+      opCoId: null,
     },
+  });
+
+  // ── Acme Users ────────────────────────────────────────────────────────────
+  await prisma.user.upsert({
+    where: { email: "opco.admin@acme.com" },
+    update: {},
+    create: { email: "opco.admin@acme.com", name: "Acme Admin", passwordHash: password, role: "OPCO_ADMIN", opCoId: acme.id },
   });
 
   await prisma.user.upsert({
     where: { email: "manager@acme.com" },
     update: {},
-    create: {
-      email: "manager@acme.com",
-      name: "Acme Manager",
-      passwordHash: password,
-      role: "OPCO_MANAGER",
-      opCoId: acme.id,
-    },
+    create: { email: "manager@acme.com", name: "Acme Manager", passwordHash: password, role: "OPCO_MANAGER", opCoId: acme.id },
   });
 
   await prisma.user.upsert({
     where: { email: "alice@acme.com" },
     update: {},
-    create: {
-      email: "alice@acme.com",
-      name: "Alice Smith",
-      passwordHash: password,
-      role: "OPCO_USER",
-      opCoId: acme.id,
-    },
+    create: { email: "alice@acme.com", name: "Alice Smith", passwordHash: password, role: "OPCO_USER", opCoId: acme.id },
   });
 
   await prisma.user.upsert({
     where: { email: "bob@acme.com" },
     update: {},
-    create: {
-      email: "bob@acme.com",
-      name: "Bob Jones",
-      passwordHash: password,
-      role: "OPCO_USER",
-      opCoId: acme.id,
-    },
+    create: { email: "bob@acme.com", name: "Bob Jones", passwordHash: password, role: "OPCO_USER", opCoId: acme.id },
   });
 
+  // ── Globex Users ──────────────────────────────────────────────────────────
   await prisma.user.upsert({
     where: { email: "opco.admin@globex.com" },
     update: {},
-    create: {
-      email: "opco.admin@globex.com",
-      name: "Globex Admin",
-      passwordHash: password,
-      role: "OPCO_ADMIN",
-      opCoId: globex.id,
-    },
+    create: { email: "opco.admin@globex.com", name: "Globex Admin", passwordHash: password, role: "OPCO_ADMIN", opCoId: globex.id },
   });
 
   await prisma.user.upsert({
     where: { email: "manager@globex.com" },
     update: {},
-    create: {
-      email: "manager@globex.com",
-      name: "Globex Manager",
-      passwordHash: password,
-      role: "OPCO_MANAGER",
-      opCoId: globex.id,
-    },
+    create: { email: "manager@globex.com", name: "Globex Manager", passwordHash: password, role: "OPCO_MANAGER", opCoId: globex.id },
   });
 
   await prisma.user.upsert({
     where: { email: "carol@globex.com" },
     update: {},
-    create: {
-      email: "carol@globex.com",
-      name: "Carol White",
-      passwordHash: password,
-      role: "OPCO_USER",
-      opCoId: globex.id,
-    },
+    create: { email: "carol@globex.com", name: "Carol White", passwordHash: password, role: "OPCO_USER", opCoId: globex.id },
   });
 
-  // ── Categories ────────────────────────────────────────────────────────────
+  // ── Shared Categories (under HoldCo Internal) ─────────────────────────────
+  const sharedCategories = [
+    "Corporate Travel",
+    "Executive Meals",
+    "Corporate Software",
+    "Training & Development",
+    "Office Supplies",
+  ];
+  for (const name of sharedCategories) {
+    await prisma.expenseCategory.upsert({
+      where: { opCoId_name: { opCoId: holdco.id, name } },
+      update: {},
+      create: { name, opCoId: holdco.id, isShared: true, isActive: true },
+    });
+  }
 
+  // ── Acme Categories ───────────────────────────────────────────────────────
   const acmeCategories = ["Travel", "Meals & Entertainment", "Software & Subscriptions", "Office Supplies", "Training"];
   for (const name of acmeCategories) {
     await prisma.expenseCategory.upsert({
@@ -129,6 +121,7 @@ async function main() {
     });
   }
 
+  // ── Globex Categories ─────────────────────────────────────────────────────
   const globexCategories = ["Travel", "Client Entertainment", "Equipment", "Marketing", "Consulting Fees"];
   for (const name of globexCategories) {
     await prisma.expenseCategory.upsert({
@@ -138,17 +131,13 @@ async function main() {
     });
   }
 
-  // ── Sample expenses for Alice (Acme) ──────────────────────────────────────
-
+  // ── Sample Expenses for Alice ──────────────────────────────────────────────
   const alice = await prisma.user.findUniqueOrThrow({ where: { email: "alice@acme.com" } });
-  const travelCat = await prisma.expenseCategory.findFirstOrThrow({
-    where: { opCoId: acme.id, name: "Travel" },
-  });
-  const mealsCat = await prisma.expenseCategory.findFirstOrThrow({
-    where: { opCoId: acme.id, name: "Meals & Entertainment" },
-  });
+  const manager = await prisma.user.findUniqueOrThrow({ where: { email: "manager@acme.com" } });
+  const travelCat = await prisma.expenseCategory.findFirstOrThrow({ where: { opCoId: acme.id, name: "Travel" } });
+  const mealsCat = await prisma.expenseCategory.findFirstOrThrow({ where: { opCoId: acme.id, name: "Meals & Entertainment" } });
 
-  const draftExpense = await prisma.expense.upsert({
+  await prisma.expense.upsert({
     where: { id: "seed-expense-draft-001" },
     update: {},
     create: {
@@ -164,13 +153,13 @@ async function main() {
     },
   });
 
-  const submittedExpense = await prisma.expense.upsert({
+  await prisma.expense.upsert({
     where: { id: "seed-expense-submitted-001" },
     update: {},
     create: {
       id: "seed-expense-submitted-001",
       title: "Team Lunch",
-      description: "Lunch with product team to discuss roadmap",
+      description: "Lunch with product team",
       amount: 127.50,
       currency: "USD",
       status: "SUBMITTED",
@@ -186,7 +175,7 @@ async function main() {
     create: {
       id: "seed-expense-approved-001",
       title: "Hotel — NYC Conference",
-      description: "2 nights at Marriott for sales conference",
+      description: "2 nights at Marriott",
       amount: 398.00,
       currency: "USD",
       status: "APPROVED",
@@ -212,52 +201,34 @@ async function main() {
     },
   });
 
-  // Approval records for approved/rejected expenses
-  const manager = await prisma.user.findUniqueOrThrow({ where: { email: "manager@acme.com" } });
-
   await prisma.approvalRecord.upsert({
     where: { id: "seed-approval-001" },
     update: {},
-    create: {
-      id: "seed-approval-001",
-      action: "APPROVED",
-      comment: "Approved — within policy.",
-      expenseId: approvedExpense.id,
-      reviewedById: manager.id,
-    },
+    create: { id: "seed-approval-001", action: "APPROVED", comment: "Approved — within policy.", expenseId: approvedExpense.id, reviewedById: manager.id },
   });
 
   await prisma.approvalRecord.upsert({
     where: { id: "seed-approval-002" },
     update: {},
-    create: {
-      id: "seed-approval-002",
-      action: "REJECTED",
-      comment: "Exceeds the $500 meals limit. Please split and resubmit.",
-      expenseId: rejectedExpense.id,
-      reviewedById: manager.id,
-    },
+    create: { id: "seed-approval-002", action: "REJECTED", comment: "Exceeds $500 meals limit. Please split and resubmit.", expenseId: rejectedExpense.id, reviewedById: manager.id },
   });
 
-  console.log("\nSeeded successfully!\n");
-  console.log("All accounts use password: Admin@123!\n");
-  console.log("┌─────────────────────────────┬──────────────────────────────┬───────────────┐");
-  console.log("│ Email                       │ Role                         │ OpCo          │");
-  console.log("├─────────────────────────────┼──────────────────────────────┼───────────────┤");
-  console.log("│ admin@holdco.com            │ HOLDCO_ADMIN                 │ —             │");
-  console.log("│ opco.admin@acme.com         │ OPCO_ADMIN                   │ Acme Corp     │");
-  console.log("│ manager@acme.com            │ OPCO_MANAGER                 │ Acme Corp     │");
-  console.log("│ alice@acme.com              │ OPCO_USER                    │ Acme Corp     │");
-  console.log("│ bob@acme.com                │ OPCO_USER                    │ Acme Corp     │");
-  console.log("│ opco.admin@globex.com       │ OPCO_ADMIN                   │ Globex Inc    │");
-  console.log("│ manager@globex.com          │ OPCO_MANAGER                 │ Globex Inc    │");
-  console.log("│ carol@globex.com            │ OPCO_USER                    │ Globex Inc    │");
-  console.log("└─────────────────────────────┴──────────────────────────────┴───────────────┘");
+  console.log("\nSeeded successfully! All accounts use password: Admin@123!\n");
+  console.log("┌──────────────────────────────┬───────────────────┬────────────────┐");
+  console.log("│ Email                        │ Role              │ OpCo           │");
+  console.log("├──────────────────────────────┼───────────────────┼────────────────┤");
+  console.log("│ admin@holdco.com             │ HOLDCO_ADMIN      │ —              │");
+  console.log("│ holdco.user@holdco.com       │ HOLDCO_USER       │ —              │");
+  console.log("│ opco.admin@acme.com          │ OPCO_ADMIN        │ Acme Corp      │");
+  console.log("│ manager@acme.com             │ OPCO_MANAGER      │ Acme Corp      │");
+  console.log("│ alice@acme.com               │ OPCO_USER         │ Acme Corp      │");
+  console.log("│ bob@acme.com                 │ OPCO_USER         │ Acme Corp      │");
+  console.log("│ opco.admin@globex.com        │ OPCO_ADMIN        │ Globex Inc     │");
+  console.log("│ manager@globex.com           │ OPCO_MANAGER      │ Globex Inc     │");
+  console.log("│ carol@globex.com             │ OPCO_USER         │ Globex Inc     │");
+  console.log("└──────────────────────────────┴───────────────────┴────────────────┘");
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
+  .catch((e) => { console.error(e); process.exit(1); })
   .finally(() => prisma.$disconnect());

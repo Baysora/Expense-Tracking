@@ -1,31 +1,12 @@
-import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { categoryApi } from "@/lib/api";
-import { Plus, Loader2, Tag, ToggleLeft, ToggleRight } from "lucide-react";
+import { Loader2, Tag, Globe, Paperclip, Info } from "lucide-react";
 
 export function OpcoCategories() {
-  const qc = useQueryClient();
-  const [newName, setNewName] = useState("");
-  const [showForm, setShowForm] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const { data: categories, isLoading } = useQuery({ queryKey: ["categories"], queryFn: categoryApi.list });
-
-  const create = useMutation({
-    mutationFn: categoryApi.create,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["categories"] });
-      setNewName("");
-      setShowForm(false);
-      setError(null);
-    },
-    onError: (e: Error) => setError(e.message),
-  });
-
-  const toggle = useMutation({
-    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
-      categoryApi.update(id, { isActive }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
+  const { data: categories, isLoading } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => categoryApi.list(),
   });
 
   if (isLoading) {
@@ -34,71 +15,54 @@ export function OpcoCategories() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--color-text)" }}>Expense Categories</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--color-text-muted)" }}>Manage categories for expense submissions</p>
-        </div>
-        <button onClick={() => setShowForm((v) => !v)} className="btn-primary">
-          <Plus className="h-4 w-4" /> New Category
-        </button>
+      <div>
+        <h1 className="text-2xl font-bold" style={{ color: "var(--color-text)" }}>Expense Categories</h1>
+        <p className="mt-1 text-sm" style={{ color: "var(--color-text-muted)" }}>Categories available for expense submissions</p>
       </div>
 
-      {showForm && (
-        <div className="card">
-          <form
-            onSubmit={(e) => { e.preventDefault(); create.mutate({ name: newName }); }}
-            className="flex flex-col gap-3 sm:flex-row sm:items-end"
-          >
-            <div className="flex-1">
-              <label className="label">Category Name</label>
-              <input
-                className="input"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="e.g. Travel, Meals, Software"
-                required
-              />
-            </div>
-            {error && <p className="text-sm" style={{ color: "var(--color-danger)" }}>{error}</p>}
-            <button type="submit" disabled={create.isPending} className="btn-primary sm:mb-0">
-              {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Add
-            </button>
-          </form>
-        </div>
-      )}
+      <div className="flex items-start gap-2 rounded-lg border p-3 text-sm" style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-bg-subtle)" }}>
+        <Info className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: "var(--color-primary)" }} />
+        <p style={{ color: "var(--color-text-muted)" }}>
+          Categories are managed by the HoldCo Administrator. Contact your HoldCo admin to add, modify, or archive categories.
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {categories?.map((cat) => (
-          <div key={cat.id} className="card flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg p-2" style={{ backgroundColor: "rgba(30,58,95,0.08)" }}>
-                <Tag className="h-4 w-4" style={{ color: "var(--color-primary)" }} />
-              </div>
-              <div>
-                <p className="font-medium" style={{ color: "var(--color-text)", opacity: cat.isActive ? 1 : 0.5 }}>
-                  {cat.name}
-                </p>
-                <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-                  {cat.isActive ? "Active" : "Inactive"}
-                </p>
+          <div
+            key={cat.id}
+            className="card flex items-center gap-3"
+            style={{ opacity: cat.isActive ? 1 : 0.5 }}
+          >
+            <div className="rounded-lg p-2 flex-shrink-0" style={{ backgroundColor: "rgba(30,58,95,0.08)" }}>
+              <Tag className="h-4 w-4" style={{ color: "var(--color-primary)" }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium truncate" style={{ color: "var(--color-text)" }}>{cat.name}</p>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                  {cat.isActive ? "Active" : "Archived"}
+                </span>
+                {cat.isShared && (
+                  <span className="inline-flex items-center gap-1 text-xs" style={{ color: "var(--color-primary)" }}>
+                    <Globe className="h-3 w-3" />
+                    Shared
+                  </span>
+                )}
+                {cat.requiresAttachment && (
+                  <span className="inline-flex items-center gap-1 text-xs" style={{ color: "var(--color-text-muted)" }}>
+                    <Paperclip className="h-3 w-3" />
+                    Attachment required
+                  </span>
+                )}
               </div>
             </div>
-            <button
-              onClick={() => toggle.mutate({ id: cat.id, isActive: !cat.isActive })}
-              className="ml-2 text-sm"
-              title={cat.isActive ? "Deactivate" : "Activate"}
-              style={{ color: cat.isActive ? "var(--color-success)" : "var(--color-text-muted)" }}
-            >
-              {cat.isActive ? <ToggleRight className="h-6 w-6" /> : <ToggleLeft className="h-6 w-6" />}
-            </button>
           </div>
         ))}
 
         {!categories || categories.length === 0 ? (
           <div className="card py-10 text-center sm:col-span-2 lg:col-span-3" style={{ color: "var(--color-text-muted)" }}>
-            No categories yet. Add your first category above.
+            No categories yet. Your HoldCo admin will add categories for your OpCo.
           </div>
         ) : null}
       </div>

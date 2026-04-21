@@ -12,6 +12,9 @@ model OpCo {
   name      String
   slug      String   @unique
   isActive  Boolean  @default(true)
+  isHoldCo  Boolean  @default(false)
+  requireAttachmentForAll      Boolean  @default(false)
+  requireAttachmentAboveAmount Decimal? @db.Decimal(12, 2)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -38,9 +41,11 @@ model User {
 }
 
 model ExpenseCategory {
-  id       String  @id @default(cuid())
-  name     String
-  isActive Boolean @default(true)
+  id                 String  @id @default(cuid())
+  name               String
+  isActive           Boolean @default(true)
+  isShared           Boolean @default(false)
+  requiresAttachment Boolean @default(false)
 
   opCoId   String
   opCo     OpCo      @relation(fields: [opCoId], references: [id], onDelete: NoAction, onUpdate: NoAction)

@@ -151,6 +151,10 @@ export function HoldcoSidebar() {
     { label: "Dashboard", path: "/holdco/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
     { label: "OpCos", path: "/holdco/opcos", icon: <Building2 className="h-4 w-4" /> },
     { label: "Users", path: "/holdco/users", icon: <Users className="h-4 w-4" /> },
+    { label: "Expenses", path: "/holdco/expenses", icon: <Receipt className="h-4 w-4" /> },
+    { label: "Categories", path: "/holdco/categories", icon: <Tag className="h-4 w-4" /> },
+    { label: "My Expenses", path: "/dashboard", icon: <ChevronRight className="h-4 w-4" /> },
+    { label: "Submit Expense", path: "/expenses/new", icon: <ChevronRight className="h-4 w-4" /> },
   ];
   return <Sidebar navItems={navItems} />;
 }

@@ -10,6 +10,8 @@ import type {
   CreateExpenseRequest,
   ReviewExpenseRequest,
   CreateCategoryRequest,
+  CopyCategoriesRequest,
+  ExportExpensesParams,
 } from "@expense/shared";
 
 const BASE_URL = "/api";
@@ -76,8 +78,14 @@ export const userApi = {
 
 // Expenses
 export const expenseApi = {
-  list: (status?: string) =>
-    request<Expense[]>(`/expenses${status ? `?status=${status}` : ""}`),
+  list: (params?: { status?: string; opCoId?: string; mine?: boolean }) => {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set("status", params.status);
+    if (params?.opCoId) qs.set("opCoId", params.opCoId);
+    if (params?.mine) qs.set("mine", "true");
+    const query = qs.toString();
+    return request<Expense[]>(`/expenses${query ? `?${query}` : ""}`);
+  },
   getById: (id: string) => request<Expense>(`/expenses/${id}`),
   create: (data: CreateExpenseRequest) =>
     request<Expense>("/expenses", { method: "POST", body: JSON.stringify(data) }),
@@ -92,14 +100,57 @@ export const expenseApi = {
 
 // Categories
 export const categoryApi = {
-  list: () => request<ExpenseCategory[]>("/categories"),
+  list: (opCoId?: string) => {
+    const qs = opCoId ? `?opCoId=${encodeURIComponent(opCoId)}` : "";
+    return request<ExpenseCategory[]>(`/categories${qs}`);
+  },
   create: (data: CreateCategoryRequest) =>
     request<ExpenseCategory>("/categories", { method: "POST", body: JSON.stringify(data) }),
-  update: (id: string, data: Partial<ExpenseCategory>) =>
+  update: (id: string, data: Partial<ExpenseCategory> & { isShared?: boolean; requiresAttachment?: boolean }) =>
     request<ExpenseCategory>(`/categories/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
+  copy: (data: CopyCategoriesRequest) =>
+    request<{ copied: number; skipped: number; targets: number }>("/categories/copy", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+};
+
+// Exports
+export const exportApi = {
+  download: async (params: ExportExpensesParams): Promise<void> => {
+    const authHeader = await getAuthHeader();
+    const qs = new URLSearchParams();
+    if (params.format) qs.set("format", params.format);
+    if (params.opCoId) qs.set("opCoId", params.opCoId);
+    if (params.userId) qs.set("userId", params.userId);
+    if (params.status) qs.set("status", params.status);
+    if (params.startDate) qs.set("startDate", params.startDate);
+    if (params.endDate) qs.set("endDate", params.endDate);
+
+    const headers: Record<string, string> = {};
+    if (authHeader) headers.Authorization = authHeader;
+
+    const res = await fetch(`${BASE_URL}/exports/expenses?${qs.toString()}`, { headers });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error((body as { error: string }).error ?? `HTTP ${res.status}`);
+    }
+
+    const blob = await res.blob();
+    const contentDisposition = res.headers.get("Content-Disposition") ?? "";
+    const match = contentDisposition.match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : `expenses.${params.format ?? "csv"}`;
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
 };
 
 // Attachments

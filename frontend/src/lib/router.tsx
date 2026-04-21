@@ -7,6 +7,8 @@ export function getRoleHome(role: Role): string {
   switch (role) {
     case Role.HOLDCO_ADMIN:
       return "/holdco/dashboard";
+    case Role.HOLDCO_USER:
+      return "/dashboard";
     case Role.OPCO_ADMIN:
     case Role.OPCO_MANAGER:
       return "/opco/dashboard";

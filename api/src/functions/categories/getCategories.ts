@@ -1,7 +1,8 @@
 import { app, HttpRequest } from "@azure/functions";
 import { Role } from "@expense/shared";
-import { verifyToken, requireRoles } from "../../lib/auth";
+import { verifyToken } from "../../lib/auth";
 import { prisma } from "../../lib/prisma";
+import { getHoldCoOpCoId } from "../../lib/opco";
 import { ok, unauthorized, forbidden } from "../../lib/errors";
 
 app.http("getCategories", {
@@ -11,13 +12,43 @@ app.http("getCategories", {
   handler: async (req: HttpRequest) => {
     const claims = await verifyToken(req);
     if (!claims) return unauthorized();
-    if (!claims.opCoId) return forbidden("No OpCo associated with this account");
 
+    const url = new URL(req.url);
+    const opCoIdParam = url.searchParams.get("opCoId") ?? undefined;
+
+    let opCoId: string;
+
+    if (claims.role === Role.HOLDCO_ADMIN) {
+      // Can query any OpCo's categories; default to HoldCo Internal
+      opCoId = opCoIdParam ?? (await getHoldCoOpCoId());
+    } else if (claims.role === Role.HOLDCO_USER) {
+      opCoId = await getHoldCoOpCoId();
+    } else {
+      if (!claims.opCoId) return forbidden("No OpCo associated with this account");
+      opCoId = claims.opCoId;
+    }
+
+    // Return OpCo-specific categories + shared categories (stored under HoldCo Internal)
+    const holdCoOpCoId = await getHoldCoOpCoId();
     const categories = await prisma.expenseCategory.findMany({
-      where: { opCoId: claims.opCoId, isActive: true },
+      where: {
+        isActive: true,
+        OR: [
+          { opCoId },
+          { isShared: true, opCoId: holdCoOpCoId },
+        ],
+      },
       orderBy: { name: "asc" },
     });
 
-    return ok(categories);
+    // Deduplicate by name (OpCo-specific takes priority over shared)
+    const seen = new Map<string, typeof categories[0]>();
+    for (const cat of categories) {
+      if (!seen.has(cat.name) || !cat.isShared) {
+        seen.set(cat.name, cat);
+      }
+    }
+
+    return ok(Array.from(seen.values()).sort((a, b) => a.name.localeCompare(b.name)));
   },
 });

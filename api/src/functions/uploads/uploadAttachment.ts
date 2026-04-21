@@ -2,6 +2,7 @@ import { app, HttpRequest } from "@azure/functions";
 import { Role } from "@expense/shared";
 import { verifyToken, requireRoles } from "../../lib/auth";
 import { prisma } from "../../lib/prisma";
+import { getHoldCoOpCoId } from "../../lib/opco";
 import { uploadBlob, isAllowedMimeType, isAllowedFileSize, generateSasUrl } from "../../lib/blob";
 import { created, unauthorized, forbidden, badRequest, notFound } from "../../lib/errors";
 
@@ -14,23 +15,30 @@ app.http("uploadAttachment", {
   handler: async (req: HttpRequest) => {
     const claims = await verifyToken(req);
     if (!claims) return unauthorized();
-    if (!requireRoles(claims, Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER)) return forbidden();
-    if (!claims.opCoId) return forbidden();
+    if (!requireRoles(claims, Role.HOLDCO_ADMIN, Role.HOLDCO_USER, Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER)) return forbidden();
+
+    // Resolve opCoId for HoldCo roles
+    let opCoId = claims.opCoId;
+    if (!opCoId) {
+      if (claims.role === Role.HOLDCO_ADMIN || claims.role === Role.HOLDCO_USER) {
+        opCoId = await getHoldCoOpCoId();
+      } else {
+        return forbidden("No OpCo associated with this account");
+      }
+    }
 
     const expenseId = req.params.expenseId;
 
-    // Verify expense belongs to user's OpCo and is in DRAFT state
     const expense = await prisma.expense.findFirst({
       where: {
         id: expenseId,
-        opCoId: claims.opCoId,
+        opCoId,
         submittedById: claims.userId,
         status: "DRAFT",
       },
     });
     if (!expense) return notFound("Expense not found or not in draft state");
 
-    // Parse multipart form data
     const contentType = req.headers.get("content-type") ?? "";
     if (!contentType.includes("multipart/form-data")) {
       return badRequest("Expected multipart/form-data");
@@ -62,7 +70,7 @@ app.http("uploadAttachment", {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const { blobName } = await uploadBlob(
-      claims.opCoId,
+      opCoId,
       expenseId,
       file.name,
       buffer,

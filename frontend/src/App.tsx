@@ -10,6 +10,8 @@ import { Login } from "@/pages/Login";
 import { HoldcoDashboard } from "@/pages/holdco/Dashboard";
 import { HoldcoOpCos } from "@/pages/holdco/OpCos";
 import { HoldcoUsers } from "@/pages/holdco/Users";
+import { HoldcoExpenses } from "@/pages/holdco/Expenses";
+import { HoldcoCategories } from "@/pages/holdco/Categories";
 import { OpcoDashboard } from "@/pages/opco/Dashboard";
 import { OpcoUsers } from "@/pages/opco/Users";
 import { OpcoCategories } from "@/pages/opco/Categories";
@@ -54,6 +56,8 @@ export default function App() {
                       <Route path="dashboard" element={<HoldcoDashboard />} />
                       <Route path="opcos" element={<HoldcoOpCos />} />
                       <Route path="users" element={<HoldcoUsers />} />
+                      <Route path="expenses" element={<HoldcoExpenses />} />
+                      <Route path="categories" element={<HoldcoCategories />} />
                       <Route path="*" element={<Navigate to="dashboard" replace />} />
                     </Routes>
                   </AppShell>
@@ -84,7 +88,7 @@ export default function App() {
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute allowedRoles={[Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER]}>
+                <ProtectedRoute allowedRoles={[Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER, Role.HOLDCO_USER, Role.HOLDCO_ADMIN]}>
                   <AppShell>
                     <UserDashboard />
                   </AppShell>
@@ -94,7 +98,7 @@ export default function App() {
             <Route
               path="/expenses/new"
               element={
-                <ProtectedRoute allowedRoles={[Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER]}>
+                <ProtectedRoute allowedRoles={[Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER, Role.HOLDCO_USER, Role.HOLDCO_ADMIN]}>
                   <AppShell>
                     <NewExpense />
                   </AppShell>
@@ -104,7 +108,7 @@ export default function App() {
             <Route
               path="/expenses/:id"
               element={
-                <ProtectedRoute allowedRoles={[Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER]}>
+                <ProtectedRoute allowedRoles={[Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER, Role.HOLDCO_USER, Role.HOLDCO_ADMIN]}>
                   <AppShell>
                     <ExpenseDetail />
                   </AppShell>

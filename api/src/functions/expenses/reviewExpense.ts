@@ -17,20 +17,25 @@ app.http("reviewExpense", {
   handler: async (req: HttpRequest) => {
     const claims = await verifyToken(req);
     if (!claims) return unauthorized();
-    if (!requireRoles(claims, Role.OPCO_ADMIN, Role.OPCO_MANAGER)) return forbidden();
-    if (!claims.opCoId) return forbidden();
+    if (!requireRoles(claims, Role.HOLDCO_ADMIN, Role.OPCO_ADMIN, Role.OPCO_MANAGER)) return forbidden();
 
     const id = req.params.id;
     const body = await req.json().catch(() => null);
     const parsed = schema.safeParse(body);
     if (!parsed.success) return badRequest(parsed.error.errors[0].message);
 
-    const expense = await prisma.expense.findFirst({
-      where: { id, opCoId: claims.opCoId },
-    });
+    const where =
+      claims.role === Role.HOLDCO_ADMIN
+        ? { id }
+        : { id, opCoId: claims.opCoId! };
 
+    const expense = await prisma.expense.findFirst({ where });
     if (!expense) return notFound("Expense not found");
     if (expense.status !== "SUBMITTED") return badRequest("Only submitted expenses can be reviewed");
+
+    if (expense.submittedById === claims.userId) {
+      return forbidden("You cannot approve or reject your own expense");
+    }
 
     const [approvalRecord, updatedExpense] = await prisma.$transaction([
       prisma.approvalRecord.create({

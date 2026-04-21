@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { opcoApi } from "@/lib/api";
 import { OpCo } from "@expense/shared";
-import { Plus, Loader2, Building2, Power, PowerOff } from "lucide-react";
+import { Plus, Loader2, Building2, Power, PowerOff, Save } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 function OpCoForm({ onSuccess }: { onSuccess: () => void }) {
@@ -71,9 +71,89 @@ function OpCoForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
+function AttachmentRulesPanel({ opco }: { opco: OpCo }) {
+  const qc = useQueryClient();
+  const [requireAll, setRequireAll] = useState(opco.requireAttachmentForAll);
+  const [aboveAmount, setAboveAmount] = useState<string>(
+    opco.requireAttachmentAboveAmount != null ? String(opco.requireAttachmentAboveAmount) : ""
+  );
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const update = useMutation({
+    mutationFn: () =>
+      opcoApi.update(opco.id, {
+        requireAttachmentForAll: requireAll,
+        requireAttachmentAboveAmount: aboveAmount !== "" ? parseFloat(aboveAmount) : null,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["opcos"] });
+      setSaved(true);
+      setSaveError(null);
+      setTimeout(() => setSaved(false), 2000);
+    },
+    onError: (e: Error) => setSaveError(e.message),
+  });
+
+  return (
+    <div className="mt-3 rounded-lg border p-4 space-y-3" style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-bg-subtle)" }}>
+      <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-text-muted)" }}>
+        Attachment Rules
+      </p>
+
+      <label className="flex items-center gap-2 cursor-pointer text-sm">
+        <input
+          type="checkbox"
+          checked={requireAll}
+          onChange={(e) => setRequireAll(e.target.checked)}
+        />
+        <span style={{ color: "var(--color-text)" }}>Require attachment for all expenses</span>
+      </label>
+
+      <div>
+        <label className="label text-xs">Require attachment when amount exceeds</label>
+        <div className="flex items-center gap-2">
+          <span className="text-sm" style={{ color: "var(--color-text-muted)" }}>$</span>
+          <input
+            type="number"
+            className="input w-36 py-1.5 text-sm"
+            placeholder="e.g. 100"
+            min="0"
+            step="0.01"
+            value={aboveAmount}
+            onChange={(e) => setAboveAmount(e.target.value)}
+          />
+          {aboveAmount && (
+            <button
+              type="button"
+              onClick={() => setAboveAmount("")}
+              className="text-xs"
+              style={{ color: "var(--color-text-muted)" }}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
+      {saveError && <p className="text-xs" style={{ color: "var(--color-danger)" }}>{saveError}</p>}
+
+      <button
+        onClick={() => update.mutate()}
+        disabled={update.isPending}
+        className="btn-secondary py-1.5 text-xs"
+      >
+        {update.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+        {saved ? "Saved!" : "Save Rules"}
+      </button>
+    </div>
+  );
+}
+
 export function HoldcoOpCos() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const { data: opcos, isLoading } = useQuery({ queryKey: ["opcos"], queryFn: opcoApi.list });
 
   const toggle = useMutation({
@@ -89,6 +169,8 @@ export function HoldcoOpCos() {
       </div>
     );
   }
+
+  const displayOpcos = opcos?.filter((o) => !o.isHoldCo) ?? [];
 
   return (
     <div className="space-y-6">
@@ -115,7 +197,7 @@ export function HoldcoOpCos() {
       )}
 
       <div className="card overflow-hidden p-0">
-        {!opcos || opcos.length === 0 ? (
+        {displayOpcos.length === 0 ? (
           <div className="py-12 text-center" style={{ color: "var(--color-text-muted)" }}>
             No OpCos yet. Click "New OpCo" to get started.
           </div>
@@ -134,29 +216,46 @@ export function HoldcoOpCos() {
                   </tr>
                 </thead>
                 <tbody>
-                  {opcos.map((o) => (
-                    <tr key={o.id} className="border-b last:border-0" style={{ borderColor: "var(--color-border)" }}>
-                      <td className="px-4 py-3 font-medium" style={{ color: "var(--color-text)" }}>{o.name}</td>
-                      <td className="px-4 py-3" style={{ color: "var(--color-text-muted)" }}>/{o.slug}</td>
-                      <td className="px-4 py-3">
-                        <span className={o.isActive ? "badge-success" : "badge-neutral"}>
-                          {o.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3" style={{ color: "var(--color-text-muted)" }}>
-                        {formatDate(o.createdAt)}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => toggle.mutate({ id: o.id, isActive: !o.isActive })}
-                          className={o.isActive ? "btn-secondary" : "btn-primary"}
-                          title={o.isActive ? "Deactivate" : "Activate"}
-                        >
-                          {o.isActive ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
-                          {o.isActive ? "Deactivate" : "Activate"}
-                        </button>
-                      </td>
-                    </tr>
+                  {displayOpcos.map((o) => (
+                    <React.Fragment key={o.id}>
+                      <tr className="border-b last:border-0" style={{ borderColor: "var(--color-border)" }}>
+                        <td className="px-4 py-3 font-medium" style={{ color: "var(--color-text)" }}>{o.name}</td>
+                        <td className="px-4 py-3" style={{ color: "var(--color-text-muted)" }}>/{o.slug}</td>
+                        <td className="px-4 py-3">
+                          <span className={o.isActive ? "badge-success" : "badge-neutral"}>
+                            {o.isActive ? "Active" : "Inactive"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3" style={{ color: "var(--color-text-muted)" }}>
+                          {formatDate(o.createdAt)}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => setExpandedId(expandedId === o.id ? null : o.id)}
+                              className="btn-secondary px-2 py-1.5 text-xs"
+                            >
+                              {expandedId === o.id ? "Hide Rules" : "Attachment Rules"}
+                            </button>
+                            <button
+                              onClick={() => toggle.mutate({ id: o.id, isActive: !o.isActive })}
+                              className={o.isActive ? "btn-secondary" : "btn-primary"}
+                              title={o.isActive ? "Deactivate" : "Activate"}
+                            >
+                              {o.isActive ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                              {o.isActive ? "Deactivate" : "Activate"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {expandedId === o.id && (
+                        <tr style={{ borderColor: "var(--color-border)" }}>
+                          <td colSpan={5} className="px-4 pb-3">
+                            <AttachmentRulesPanel opco={o} />
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
@@ -164,21 +263,31 @@ export function HoldcoOpCos() {
 
             {/* Mobile list */}
             <div className="sm:hidden divide-y" style={{ borderColor: "var(--color-border)" }}>
-              {opcos.map((o) => (
-                <div key={o.id} className="flex items-center justify-between p-4">
-                  <div>
-                    <p className="font-medium" style={{ color: "var(--color-text)" }}>{o.name}</p>
-                    <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>/{o.slug}</p>
-                    <span className={`${o.isActive ? "badge-success" : "badge-neutral"} mt-2`}>
-                      {o.isActive ? "Active" : "Inactive"}
-                    </span>
+              {displayOpcos.map((o) => (
+                <div key={o.id} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium" style={{ color: "var(--color-text)" }}>{o.name}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>/{o.slug}</p>
+                      <span className={`${o.isActive ? "badge-success" : "badge-neutral"} mt-2`}>
+                        {o.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => toggle.mutate({ id: o.id, isActive: !o.isActive })}
+                      className="btn-secondary px-3 py-1.5 text-xs"
+                    >
+                      {o.isActive ? "Deactivate" : "Activate"}
+                    </button>
                   </div>
                   <button
-                    onClick={() => toggle.mutate({ id: o.id, isActive: !o.isActive })}
-                    className="btn-secondary px-3 py-1.5 text-xs"
+                    onClick={() => setExpandedId(expandedId === o.id ? null : o.id)}
+                    className="text-xs w-full text-left"
+                    style={{ color: "var(--color-primary)" }}
                   >
-                    {o.isActive ? "Deactivate" : "Activate"}
+                    {expandedId === o.id ? "Hide attachment rules ▲" : "Show attachment rules ▼"}
                   </button>
+                  {expandedId === o.id && <AttachmentRulesPanel opco={o} />}
                 </div>
               ))}
             </div>
