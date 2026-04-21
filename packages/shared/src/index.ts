@@ -13,6 +13,12 @@ export enum ExpenseStatus {
   REJECTED = "REJECTED",
 }
 
+export enum CategoryStatus {
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+  DELETED = "DELETED",
+}
+
 export enum AttachmentType {
   RECEIPT = "RECEIPT",
   INVOICE = "INVOICE",
@@ -45,7 +51,7 @@ export interface ExpenseCategory {
   id: string;
   name: string;
   opCoId: string;
-  isActive: boolean;
+  status: CategoryStatus;
   isShared: boolean;
   requiresAttachment: boolean;
 }

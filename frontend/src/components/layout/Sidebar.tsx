@@ -24,14 +24,8 @@ interface NavItem {
 
 function Logo() {
   return (
-    <div className="flex items-center gap-2 px-4 py-5">
-      <div
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-white text-sm font-bold"
-        style={{ backgroundColor: "var(--color-accent)" }}
-      >
-        B
-      </div>
-      <span className="text-lg font-bold text-white">Baysora</span>
+    <div className="flex items-center px-5 py-5">
+      <img src="/logo-white.png" alt="Baysora" className="h-7 w-auto" />
     </div>
   );
 }
@@ -72,7 +66,7 @@ export function Sidebar({ navItems }: { navItems: NavItem[] }) {
   }
 
   const sidebarContent = (
-    <div className="flex h-full flex-col" style={{ backgroundColor: "var(--color-primary)" }}>
+    <div className="flex h-full flex-col" style={{ backgroundColor: "var(--color-sidebar)" }}>
       <Logo />
       <div className="flex-1 overflow-y-auto py-2">
         <NavItems items={navItems} onClose={() => setMobileOpen(false)} />
@@ -81,7 +75,7 @@ export function Sidebar({ navItems }: { navItems: NavItem[] }) {
         <div className="mb-3 flex items-center gap-3 px-1">
           <div
             className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
-            style={{ backgroundColor: "var(--color-primary-light)" }}
+            style={{ backgroundColor: "rgba(255,255,255,0.15)" }}
           >
             {user?.name?.charAt(0).toUpperCase() ?? "?"}
           </div>
@@ -106,7 +100,7 @@ export function Sidebar({ navItems }: { navItems: NavItem[] }) {
       {/* Mobile top bar */}
       <div
         className="flex items-center justify-between px-4 py-3 lg:hidden"
-        style={{ backgroundColor: "var(--color-primary)" }}
+        style={{ backgroundColor: "var(--color-sidebar)" }}
       >
         <Logo />
         <button

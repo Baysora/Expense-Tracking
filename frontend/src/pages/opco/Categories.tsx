@@ -1,6 +1,7 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { categoryApi } from "@/lib/api";
+import { CategoryStatus } from "@expense/shared";
 import { Loader2, Tag, Globe, Paperclip, Info } from "lucide-react";
 
 export function OpcoCategories() {
@@ -32,7 +33,7 @@ export function OpcoCategories() {
           <div
             key={cat.id}
             className="card flex items-center gap-3"
-            style={{ opacity: cat.isActive ? 1 : 0.5 }}
+            style={{ opacity: cat.status === CategoryStatus.ACTIVE ? 1 : 0.5 }}
           >
             <div className="rounded-lg p-2 flex-shrink-0" style={{ backgroundColor: "rgba(30,58,95,0.08)" }}>
               <Tag className="h-4 w-4" style={{ color: "var(--color-primary)" }} />
@@ -41,7 +42,7 @@ export function OpcoCategories() {
               <p className="font-medium truncate" style={{ color: "var(--color-text)" }}>{cat.name}</p>
               <div className="mt-1 flex items-center gap-2">
                 <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-                  {cat.isActive ? "Active" : "Archived"}
+                  {cat.status === CategoryStatus.ACTIVE ? "Active" : "Inactive"}
                 </span>
                 {cat.isShared && (
                   <span className="inline-flex items-center gap-1 text-xs" style={{ color: "var(--color-primary)" }}>

@@ -9,6 +9,7 @@ import { formatDate } from "@/lib/utils";
 const OPCO_ROLES = [Role.OPCO_ADMIN, Role.OPCO_MANAGER, Role.OPCO_USER];
 const ROLE_LABELS: Record<Role, string> = {
   [Role.HOLDCO_ADMIN]: "HoldCo Admin",
+  [Role.HOLDCO_USER]: "HoldCo User",
   [Role.OPCO_ADMIN]: "OpCo Admin",
   [Role.OPCO_MANAGER]: "Manager",
   [Role.OPCO_USER]: "User",

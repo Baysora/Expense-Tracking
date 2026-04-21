@@ -43,7 +43,7 @@ model User {
 model ExpenseCategory {
   id                 String  @id @default(cuid())
   name               String
-  isActive           Boolean @default(true)
+  status             String  @default("ACTIVE")
   isShared           Boolean @default(false)
   requiresAttachment Boolean @default(false)
 

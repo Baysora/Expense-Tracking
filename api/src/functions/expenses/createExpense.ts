@@ -41,7 +41,7 @@ app.http("createExpense", {
     const category = await prisma.expenseCategory.findFirst({
       where: {
         id: parsed.data.categoryId,
-        isActive: true,
+        status: "ACTIVE",
         OR: [{ opCoId }, { isShared: true }],
       },
     });

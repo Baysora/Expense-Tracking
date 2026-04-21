@@ -47,7 +47,7 @@ app.http("copyCategories", {
     // Fetch active source categories (include shared categories if source is HoldCo)
     const sourceCategories = await prisma.expenseCategory.findMany({
       where: {
-        isActive: true,
+        status: "ACTIVE",
         OR: [
           { opCoId: parsed.data.sourceOpCoId },
           { isShared: true, opCoId: holdCoOpCoId },
@@ -75,8 +75,8 @@ app.http("copyCategories", {
         .map((c) => ({
           name: c.name,
           opCoId: targetOpCoId,
-          isActive: true,
-          isShared: false, // copied categories are OpCo-specific
+          status: "ACTIVE",
+          isShared: false,
           requiresAttachment: c.requiresAttachment,
         }));
 

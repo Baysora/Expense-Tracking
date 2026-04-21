@@ -8,12 +8,12 @@ import { Role } from "@expense/shared";
 import { Loader2 } from "lucide-react";
 
 export function Login() {
-  const { user, setDevUser: setContextUser } = useAuth();
+  const { user, authError, setDevUser: setContextUser } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(authError);
 
   // If already logged in, redirect
   if (user) {
@@ -59,18 +59,11 @@ export function Login() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center px-4" style={{ backgroundColor: "var(--color-sidebar)" }}>
       <div className="w-full max-w-sm">
-        {/* Logo */}
         <div className="mb-8 text-center">
-          <div
-            className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl text-2xl font-bold text-white shadow-lg"
-            style={{ backgroundColor: "var(--color-accent)" }}
-          >
-            B
-          </div>
-          <h1 className="text-2xl font-bold text-white">Baysora Expenses</h1>
-          <p className="mt-1 text-sm text-white/60">Sign in to your account</p>
+          <img src="/logo-white.png" alt="Baysora" className="mx-auto mb-5 h-9 w-auto" />
+          <p className="text-sm" style={{ color: "rgba(255,255,255,0.55)" }}>Expense Management</p>
         </div>
 
         <div className="card">

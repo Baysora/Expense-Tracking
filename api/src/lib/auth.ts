@@ -5,17 +5,16 @@ import { Role, TokenClaims } from "@expense/shared";
 import { prisma } from "./prisma";
 import bcrypt from "bcryptjs";
 
-const B2C_TENANT = process.env.B2C_TENANT_NAME;
-const B2C_POLICY = process.env.B2C_POLICY_NAME;
-const B2C_AUDIENCE = process.env.B2C_AUDIENCE;
+const ENTRA_TENANT = process.env.ENTRA_TENANT_NAME;
+const ENTRA_AUDIENCE = process.env.ENTRA_AUDIENCE;
 const DEV_MODE = process.env.DEV_MODE === "true";
 
 let jwksClientInstance: ReturnType<typeof jwksClient> | null = null;
 
 function getJwksClient() {
-  if (!jwksClientInstance && B2C_TENANT && B2C_POLICY) {
+  if (!jwksClientInstance && ENTRA_TENANT) {
     jwksClientInstance = jwksClient({
-      jwksUri: `https://${B2C_TENANT}.b2clogin.com/${B2C_TENANT}.onmicrosoft.com/${B2C_POLICY}/discovery/v2.0/keys`,
+      jwksUri: `https://${ENTRA_TENANT}.ciamlogin.com/${ENTRA_TENANT}.onmicrosoft.com/discovery/v2.0/keys`,
       cache: true,
       cacheMaxEntries: 5,
       cacheMaxAge: 600000,
@@ -32,10 +31,7 @@ async function getSigningKey(kid: string): Promise<string> {
 }
 
 export async function verifyToken(req: HttpRequest): Promise<TokenClaims | null> {
-  // Dev mode: authenticate via email/password in Authorization header (Basic auth)
-  if (DEV_MODE) {
-    return verifyDevToken(req);
-  }
+  if (DEV_MODE) return verifyDevToken(req);
 
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
@@ -43,51 +39,29 @@ export async function verifyToken(req: HttpRequest): Promise<TokenClaims | null>
   const token = authHeader.slice(7);
 
   try {
+    // 1. Verify JWT signature — proves the user authenticated via Entra External ID
     const decoded = jwt.decode(token, { complete: true });
     if (!decoded || typeof decoded === "string") return null;
-
     const kid = decoded.header.kid;
     if (!kid) return null;
 
     const publicKey = await getSigningKey(kid);
     const payload = jwt.verify(token, publicKey, {
       algorithms: ["RS256"],
-      audience: B2C_AUDIENCE,
+      audience: ENTRA_AUDIENCE,
     }) as Record<string, unknown>;
 
-    return {
-      userId: payload["sub"] as string,
-      email: (payload["emails"] as string[])?.[0] ?? payload["email"] as string,
-      name: payload["name"] as string ?? "",
-      role: (payload["extension_role"] as Role) ?? Role.OPCO_USER,
-      opCoId: (payload["extension_opCoId"] as string) || null,
-    };
-  } catch {
-    return null;
-  }
-}
+    // 2. Extract email — Entra External ID uses `email` or `preferred_username`
+    const email = (payload["email"] as string) ?? (payload["preferred_username"] as string);
+    if (!email) return null;
 
-async function verifyDevToken(req: HttpRequest): Promise<TokenClaims | null> {
-  // Dev-only: accept Basic auth (email:password) and look up user in DB
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader) return null;
-
-  if (authHeader.startsWith("Bearer dev:")) {
-    // Bearer dev:{email}:{password}
-    const credentials = Buffer.from(authHeader.slice(11), "base64").toString();
-    const colonIdx = credentials.indexOf(":");
-    if (colonIdx === -1) return null;
-    const email = credentials.slice(0, colonIdx);
-    const password = credentials.slice(colonIdx + 1);
-
+    // 3. Look up user in our DB for role + opCoId — no custom token claims needed
     const user = await prisma.user.findUnique({
       where: { email },
-      select: { id: true, email: true, name: true, role: true, opCoId: true, passwordHash: true, isActive: true },
+      select: { id: true, email: true, name: true, role: true, opCoId: true, isActive: true },
     });
 
     if (!user || !user.isActive) return null;
-    const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) return null;
 
     return {
       userId: user.id,
@@ -96,9 +70,38 @@ async function verifyDevToken(req: HttpRequest): Promise<TokenClaims | null> {
       role: user.role as Role,
       opCoId: user.opCoId,
     };
+  } catch {
+    return null;
   }
+}
 
-  return null;
+// Dev-only: accepts Bearer dev:<base64(email:password)>, looks up user in DB
+async function verifyDevToken(req: HttpRequest): Promise<TokenClaims | null> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer dev:")) return null;
+
+  const credentials = Buffer.from(authHeader.slice(11), "base64").toString();
+  const colonIdx = credentials.indexOf(":");
+  if (colonIdx === -1) return null;
+  const email = credentials.slice(0, colonIdx);
+  const password = credentials.slice(colonIdx + 1);
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, email: true, name: true, role: true, opCoId: true, passwordHash: true, isActive: true },
+  });
+
+  if (!user || !user.isActive) return null;
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) return null;
+
+  return {
+    userId: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role as Role,
+    opCoId: user.opCoId,
+  };
 }
 
 export function requireRoles(claims: TokenClaims | null, ...roles: Role[]): claims is TokenClaims {

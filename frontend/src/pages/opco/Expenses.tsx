@@ -11,7 +11,7 @@ export function OpcoExpenses() {
 
   const { data: expenses, isLoading } = useQuery({
     queryKey: ["expenses", statusFilter],
-    queryFn: () => expenseApi.list(statusFilter === "All" ? undefined : statusFilter),
+    queryFn: () => expenseApi.list(statusFilter === "All" ? undefined : { status: statusFilter }),
   });
 
   if (isLoading) {

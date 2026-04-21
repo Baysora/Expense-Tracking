@@ -8,7 +8,7 @@ import { ok, unauthorized, forbidden, badRequest, notFound } from "../../lib/err
 
 const schema = z.object({
   name: z.string().min(1).max(100).optional(),
-  isActive: z.boolean().optional(),
+  status: z.enum(["ACTIVE", "INACTIVE", "DELETED"]).optional(),
   isShared: z.boolean().optional(),
   requiresAttachment: z.boolean().optional(),
 });
