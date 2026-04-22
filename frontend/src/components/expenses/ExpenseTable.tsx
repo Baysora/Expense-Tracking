@@ -3,13 +3,25 @@ import { Link } from "react-router-dom";
 import { Expense } from "@expense/shared";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { StatusBadge } from "./StatusBadge";
-import { ChevronRight, Paperclip } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 interface ExpenseTableProps {
   expenses: Expense[];
   showSubmitter?: boolean;
   showOpCo?: boolean;
 }
+
+const thStyle: React.CSSProperties = {
+  padding: "12px 16px",
+  textAlign: "left",
+  fontSize: 11,
+  fontWeight: 700,
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+  color: "var(--color-text-placeholder)",
+  backgroundColor: "var(--color-bg)",
+  borderBottom: "1px solid var(--color-bg-warm-hover)",
+};
 
 export function ExpenseTable({ expenses, showSubmitter = false, showOpCo = false }: ExpenseTableProps) {
   if (expenses.length === 0) {
@@ -29,72 +41,55 @@ export function ExpenseTable({ expenses, showSubmitter = false, showOpCo = false
     <div className="card overflow-hidden p-0">
       {/* Desktop table */}
       <div className="hidden sm:block overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full" style={{ borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
-            <tr className="border-b" style={{ borderColor: "var(--color-border)" }}>
-              <th className="px-4 py-3 text-left font-semibold" style={{ color: "var(--color-text-muted)" }}>
-                Title
-              </th>
-              {showOpCo && (
-                <th className="px-4 py-3 text-left font-semibold" style={{ color: "var(--color-text-muted)" }}>
-                  OpCo
-                </th>
-              )}
-              {showSubmitter && (
-                <th className="px-4 py-3 text-left font-semibold" style={{ color: "var(--color-text-muted)" }}>
-                  Submitted By
-                </th>
-              )}
-              <th className="px-4 py-3 text-left font-semibold" style={{ color: "var(--color-text-muted)" }}>
-                Category
-              </th>
-              <th className="px-4 py-3 text-right font-semibold" style={{ color: "var(--color-text-muted)" }}>
-                Amount
-              </th>
-              <th className="px-4 py-3 text-left font-semibold" style={{ color: "var(--color-text-muted)" }}>
-                Status
-              </th>
-              <th className="px-4 py-3 text-left font-semibold" style={{ color: "var(--color-text-muted)" }}>
-                Date
-              </th>
-              <th className="px-4 py-3" />
+            <tr>
+              <th style={thStyle}>Expense</th>
+              {showOpCo && <th style={thStyle}>Company</th>}
+              {showSubmitter && <th style={thStyle}>Submitted By</th>}
+              <th style={thStyle}>Category</th>
+              <th style={{ ...thStyle, textAlign: "right" }}>Amount</th>
+              <th style={thStyle}>Status</th>
+              <th style={thStyle}>Date</th>
+              <th style={{ ...thStyle, width: 40 }} />
             </tr>
           </thead>
           <tbody>
-            {expenses.map((expense) => (
+            {expenses.map((expense, i) => (
               <tr
                 key={expense.id}
-                className="border-b last:border-0 hover:bg-gray-50 transition-colors"
-                style={{ borderColor: "var(--color-border)" }}
+                style={{
+                  borderTop: i > 0 ? "1px solid var(--color-bg-warm-hover)" : "none",
+                  transition: "background 0.1s",
+                }}
+                className="hover:bg-[#f9f8f6]"
               >
-                <td className="px-4 py-3">
-                  <span className="font-medium" style={{ color: "var(--color-text)" }}>
-                    {expense.title}
-                  </span>
+                <td style={{ padding: "13px 16px", fontWeight: 500, color: "var(--color-text)" }}>
+                  {expense.title}
                 </td>
                 {showOpCo && (
-                  <td className="px-4 py-3" style={{ color: "var(--color-text-muted)" }}>
+                  <td style={{ padding: "13px 16px", color: "var(--color-text-muted)" }}>
                     {expense.opCoName}
                   </td>
                 )}
                 {showSubmitter && (
-                  <td className="px-4 py-3" style={{ color: "var(--color-text-muted)" }}>
+                  <td style={{ padding: "13px 16px", color: "var(--color-text-muted)" }}>
                     {expense.submittedByName}
                   </td>
                 )}
-                <td className="px-4 py-3" style={{ color: "var(--color-text-muted)" }}>
+                <td style={{ padding: "13px 16px", color: "var(--color-text-muted)" }}>
                   {expense.categoryName}
                 </td>
-                <td className="px-4 py-3 text-right font-medium">
+                <td style={{ padding: "13px 16px", textAlign: "right", fontWeight: 600, color: "var(--color-text)", whiteSpace: "nowrap" }}>
                   {formatCurrency(expense.amount, expense.currency)}
                 </td>
-                <td className="px-4 py-3">
+                <td style={{ padding: "13px 16px" }}>
                   <StatusBadge status={expense.status} />
                 </td>
-                <td className="px-4 py-3" style={{ color: "var(--color-text-muted)" }}>
+                <td style={{ padding: "13px 16px", color: "var(--color-text-muted)", whiteSpace: "nowrap" }}>
                   {formatDate(expense.createdAt)}
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td style={{ padding: "13px 16px", textAlign: "right" }}>
                   <Link
                     to={`/expenses/${expense.id}`}
                     className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
@@ -110,12 +105,12 @@ export function ExpenseTable({ expenses, showSubmitter = false, showOpCo = false
       </div>
 
       {/* Mobile card list */}
-      <div className="sm:hidden divide-y" style={{ borderColor: "var(--color-border)" }}>
+      <div className="sm:hidden divide-y" style={{ borderColor: "var(--color-bg-warm-hover)" }}>
         {expenses.map((expense) => (
           <Link
             key={expense.id}
             to={`/expenses/${expense.id}`}
-            className="flex items-start justify-between p-4 hover:bg-gray-50 transition-colors"
+            className="flex items-start justify-between p-4 hover:bg-[#f9f8f6] transition-colors"
           >
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate" style={{ color: "var(--color-text)" }}>
