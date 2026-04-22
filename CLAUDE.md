@@ -64,9 +64,7 @@ docker run -d --name sql-local -e ACCEPT_EULA=Y -e SA_PASSWORD=YourPass123! -p 1
 cp api/local.settings.json.example api/local.settings.json
 # Edit DATABASE_URL to: sqlserver://localhost:1433;database=ExpenseDB;user=sa;password=YourPass123!;trustServerCertificate=true
 
-# 3. Configure frontend
-cp frontend/.env.example frontend/.env
-# VITE_DEV_MODE=true is already set — skips Entra, uses dev bearer tokens
+# 3. No frontend env vars needed — JWT auth requires no client-side config
 
 # 4. Initialize DB and seed
 cd api && npx prisma db push && npx prisma db seed && cd ..
@@ -94,7 +92,7 @@ Both `api` and `frontend` import from `@expense/shared` — **always build share
 
 - **Runtime**: Azure Functions v4 (HTTP triggers) in production; Express server (`localServer.ts`) for local dev
 - **ORM**: Prisma with SQL Server — schema at `api/prisma/schema.prisma`
-- **Auth**: JWT verification (`lib/auth.ts`); `DEV_MODE=true` bypasses Entra External ID and accepts `Bearer dev:<base64(email:password)>` tokens
+- **Auth**: JWT verification (`lib/auth.ts`); `POST /api/auth/login` issues HS256 JWTs signed with `JWT_SECRET`
 - **Validation**: Zod schemas on all function inputs
 - **File storage**: Azure Blob Storage with SAS URL access (`lib/blob.ts`)
 - **Function registration**: All HTTP handlers registered in `api/src/index.ts`
@@ -111,12 +109,11 @@ Functions are organized by domain under `api/src/functions/`:
 
 - **Framework**: React 18 + Vite + TypeScript
 - **Routing**: React Router v6; pages organized under `src/pages/` by role: `holdco/`, `opco/`, `user/`
-- **Auth state**: `src/lib/AuthContext.tsx` — React context wrapping MSAL (prod) or dev token logic
+- **Auth state**: `src/lib/AuthContext.tsx` — React context; reads JWT from sessionStorage, validates via `/api/me` on load
 - **API client**: `src/lib/api.ts` — fetch wrapper that attaches auth headers
 - **Styling**: Tailwind CSS with custom tokens in `src/styles/`
 - **Data fetching**: TanStack React Query v5
 
-In `VITE_DEV_MODE=true`, the Login page generates dev bearer tokens — no Entra needed.
 
 ### Data Model (Prisma)
 
@@ -128,21 +125,9 @@ Expense lifecycle: `DRAFT → SUBMITTED → APPROVED | REJECTED`.
 
 ### Auth Flow
 
-**Production**: Microsoft Entra External ID (CIAM). Frontend uses MSAL (`@azure/msal-browser`) with authority `https://<tenant>.ciamlogin.com/<tenant>.onmicrosoft.com/`. API verifies RS256 JWTs against the CIAM JWKS endpoint. Custom token claims `extension_role` and `extension_opCoId` must be configured in the Entra External ID tenant and added to the token via a custom claims policy.
+`POST /api/auth/login` accepts `{ email, password }`, verifies bcrypt hash, and returns a signed HS256 JWT (8h expiry). The frontend stores the token in `sessionStorage` and sends it as `Authorization: Bearer <token>` on every request. `verifyToken()` in `api/src/lib/auth.ts` validates the signature using `JWT_SECRET`. No external identity provider.
 
-**Local dev** (`DEV_MODE=true`): Bypasses Entra entirely. Frontend sends `Bearer dev:<base64(email:password)>`, API looks up the user in the DB and verifies bcrypt password hash.
-
-Role-based access is enforced server-side via `verifyToken()` + `requireRoles()` in `api/src/lib/auth.ts`. Frontend routing uses the same role values from `AuthContext` to gate page access.
-
-### Entra External ID Setup (production)
-
-When setting up the Entra External ID tenant:
-1. Register two app registrations: one for the SPA (frontend), one for the API
-2. Expose an API scope on the API registration (e.g. `access_as_user`)
-3. Add `access_as_user` as a delegated permission on the SPA registration
-4. Create custom user attributes: `role` (String) and `opCoId` (String)
-5. Add both attributes to the sign-in user flow and include them in the token
-6. Set env vars: `ENTRA_TENANT_NAME`, `ENTRA_AUDIENCE` (API client ID) on the API; `VITE_ENTRA_TENANT_NAME`, `VITE_ENTRA_CLIENT_ID`, `VITE_API_SCOPE` on the frontend
+Role-based access is enforced server-side via `verifyToken()` + `requireRoles()`. Frontend routing uses the same role values from `AuthContext` to gate page access.
 
 ### Deployment
 
@@ -150,3 +135,22 @@ When setting up the Entra External ID tenant:
 - **API**: Azure Functions (deployed as part of SWA API)
 - **IaC**: Azure Bicep templates in `infra/`
 - **Routing config**: `staticwebapp.config.json` at root handles SPA fallback and security headers
+- **Required secret**: `JWT_SECRET` in GitHub Secrets (generate: `openssl rand -base64 32`)
+
+## Branching Strategy
+
+**Two tiers only — keep it simple.**
+
+```
+main          ← production; every merge here triggers a deploy to Azure SWA
+  └── feat/*  ← feature branches
+  └── fix/*   ← bug fix branches
+```
+
+Rules:
+- Always branch off `main`
+- Open PRs back to `main`
+- Delete the branch after merging
+- No long-lived branches other than `main`
+
+Azure SWA automatically creates a preview environment for each open PR — use that for staging review before merging.
