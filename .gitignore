@@ -10,6 +10,7 @@ build/
 api/dist/
 api/.funcignore
 api/vendor_shared/
+api/expense-shared-*.tgz
 
 # Prisma
 api/prisma/generated/

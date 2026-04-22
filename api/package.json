@@ -11,7 +11,7 @@
   "dependencies": {
     "@azure/functions": "^4.5.0",
     "@azure/storage-blob": "^12.24.0",
-    "@expense/shared": "file:vendor_shared",
+    "@expense/shared": "file:expense-shared-1.0.0.tgz",
     "@prisma/client": "^5.22.0",
     "@types/archiver": "^7.0.0",
     "archiver": "^7.0.1",
