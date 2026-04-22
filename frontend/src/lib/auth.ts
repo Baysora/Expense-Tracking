@@ -22,7 +22,7 @@ export const msalConfig: Configuration = {
 };
 
 export const loginRequest = {
-  scopes: [API_SCOPE || "openid", "openid", "profile", "offline_access"],
+  scopes: [...(API_SCOPE ? [API_SCOPE] : []), "openid", "profile", "offline_access"],
 };
 
 export const msalInstance = new PublicClientApplication(msalConfig);

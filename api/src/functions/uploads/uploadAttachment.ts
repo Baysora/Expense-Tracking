@@ -69,13 +69,12 @@ app.http("uploadAttachment", {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const { blobName } = await uploadBlob(
-      opCoId,
-      expenseId,
-      file.name,
-      buffer,
-      file.type
-    );
+    let blobName: string;
+    try {
+      ({ blobName } = await uploadBlob(opCoId, expenseId, file.name, buffer, file.type));
+    } catch {
+      return { status: 500, body: JSON.stringify({ error: "Failed to upload file to storage" }), headers: { "Content-Type": "application/json" } };
+    }
 
     const attachment = await prisma.expenseAttachment.create({
       data: {

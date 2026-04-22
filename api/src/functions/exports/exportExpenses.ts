@@ -29,7 +29,9 @@ app.http("exportExpenses", {
     if (!requireRoles(claims, Role.HOLDCO_ADMIN, Role.OPCO_ADMIN, Role.OPCO_MANAGER)) return forbidden();
 
     const url = new URL(req.url);
-    const format = (url.searchParams.get("format") ?? "csv") as "csv" | "zip";
+    const rawFormat = url.searchParams.get("format") ?? "csv";
+    if (rawFormat !== "csv" && rawFormat !== "zip") return badRequest("format must be csv or zip");
+    const format = rawFormat as "csv" | "zip";
     const statusFilter = url.searchParams.get("status") ?? undefined;
     const userIdFilter = url.searchParams.get("userId") ?? undefined;
     const startDate = url.searchParams.get("startDate") ?? undefined;

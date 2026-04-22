@@ -28,14 +28,13 @@ export function NewExpense() {
   const isHoldCoRole = user?.role === Role.HOLDCO_ADMIN || user?.role === Role.HOLDCO_USER;
 
   const { data: categories, isLoading: catLoading } = useQuery({
-    queryKey: ["categories"],
+    queryKey: ["categories", user?.opCoId],
     queryFn: () => categoryApi.list(),
   });
 
   const { data: opcos } = useQuery({
     queryKey: ["opcos"],
     queryFn: opcoApi.list,
-    enabled: isHoldCoRole,
   });
 
   // Determine if attachment is required based on selected category and OpCo rules
@@ -43,8 +42,8 @@ export function NewExpense() {
   const userOpCo = useMemo(() => {
     if (!opcos) return null;
     if (isHoldCoRole) return opcos.find((o) => o.isHoldCo) ?? null;
-    return null;
-  }, [opcos, isHoldCoRole]);
+    return opcos.find((o) => o.id === user?.opCoId) ?? null;
+  }, [opcos, isHoldCoRole, user?.opCoId]);
 
   const attachmentRequired = useMemo(() => {
     if (!form.categoryId || !form.amount) return false;

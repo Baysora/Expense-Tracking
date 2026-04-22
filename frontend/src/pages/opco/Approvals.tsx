@@ -9,11 +9,16 @@ function ApprovalCard({ expense }: { expense: Expense }) {
   const qc = useQueryClient();
   const [comment, setComment] = useState("");
   const [expanded, setExpanded] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
   const review = useMutation({
     mutationFn: ({ action, comment }: { action: "APPROVED" | "REJECTED"; comment?: string }) =>
       expenseApi.review(expense.id, { action, comment }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["expenses-submitted"] }),
+    onSuccess: () => {
+      setReviewError(null);
+      qc.invalidateQueries({ queryKey: ["expenses"] });
+    },
+    onError: (e: Error) => setReviewError(e.message),
   });
 
   return (
@@ -51,6 +56,7 @@ function ApprovalCard({ expense }: { expense: Expense }) {
               placeholder="Add a note to your decision…"
             />
           </div>
+          {reviewError && <p className="text-sm" style={{ color: "var(--color-danger)" }}>{reviewError}</p>}
           <div className="flex flex-col gap-2 sm:flex-row">
             <button
               onClick={() => review.mutate({ action: "APPROVED", comment: comment || undefined })}
@@ -78,7 +84,7 @@ function ApprovalCard({ expense }: { expense: Expense }) {
 
 export function OpcoApprovals() {
   const { data: expenses, isLoading } = useQuery({
-    queryKey: ["expenses-submitted"],
+    queryKey: ["expenses", "SUBMITTED"],
     queryFn: () => expenseApi.list({ status: "SUBMITTED" }),
   });
 
