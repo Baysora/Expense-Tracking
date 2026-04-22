@@ -2,17 +2,20 @@
 
 /* Baysora brand design tokens */
 :root {
-  --color-primary:       #0a4885;
-  --color-primary-light: #0e5aa3;
-  --color-accent:        #f3a618;
-  --color-sidebar:       #232c35;
-  --color-sidebar-hover: #2e3a45;
-  --color-bg:            #FFFFFF;
-  --color-bg-subtle:     #F4F6F9;
-  --color-text:          #232c35;
-  --color-text-muted:    #64748b;
-  --color-border:        #E2E8F0;
-  --color-success:       #16A34A;
-  --color-danger:        #DC2626;
-  --color-warning:       #D97706;
+  --color-primary:          #0a4885;
+  --color-primary-light:    #0e5aa3;
+  --color-accent:           #f3a618;
+  --color-sidebar:          #1c2631;
+  --color-sidebar-hover:    #253341;
+  --color-bg:               #faf9f7;
+  --color-bg-subtle:        #f4f2ef;
+  --color-bg-warm-hover:    #f1f0ee;
+  --color-text:             #1a2332;
+  --color-text-muted:       #7a8594;
+  --color-text-placeholder: #aab0b9;
+  --color-border:           #e5e2dd;
+  --color-success:          #16A34A;
+  --color-danger:           #DC2626;
+  --color-warning:          #D97706;
+  --shadow-card:            0 1px 3px rgba(26,35,50,0.06), 0 0 0 1px rgba(26,35,50,0.05);
 }
