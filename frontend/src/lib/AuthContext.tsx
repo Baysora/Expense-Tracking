@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const res = await fetch("/api/me", {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { "x-authorization": `Bearer ${token}` },
         });
 
         if (res.ok) {
