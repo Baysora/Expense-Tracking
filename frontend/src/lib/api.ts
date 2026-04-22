@@ -118,7 +118,7 @@ export const exportApi = {
     if (params.endDate) qs.set("endDate", params.endDate);
 
     const headers: Record<string, string> = {};
-    if (authHeader) headers.Authorization = authHeader;
+    if (authHeader) headers["x-authorization"] = authHeader;
 
     const res = await fetch(`${BASE_URL}/exports/expenses?${qs.toString()}`, { headers });
     if (!res.ok) {
@@ -153,7 +153,7 @@ export const attachmentApi = {
     formData.append("type", type);
 
     const headers: Record<string, string> = {};
-    if (authHeader) headers.Authorization = authHeader;
+    if (authHeader) headers["x-authorization"] = authHeader;
 
     const res = await fetch(`${BASE_URL}/expenses/${expenseId}/attachments`, {
       method: "POST",
