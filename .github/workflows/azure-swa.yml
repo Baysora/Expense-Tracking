@@ -34,12 +34,12 @@ jobs:
           npm run build
           npm pack --pack-destination ../../api/
 
-      # Install workspace deps (used by the frontend build and API tsc)
-      # Use npm ci so the lock file pins exact versions (TypeScript 5.9.3, rollup Linux binaries, etc.)
+      # Install workspace deps — npm ci pins exact versions from the lock file
       - name: Install workspace dependencies
         run: npm ci
 
       # Compile the API TypeScript using workspace-resolved types
+      # api/dist/ is uploaded to SWA along with the source; Oryx won't re-compile
       - name: Build API
         working-directory: api
         run: |
@@ -54,15 +54,6 @@ jobs:
           VITE_API_SCOPE: ${{ secrets.ENTRA_API_SCOPE }}
           VITE_DEV_MODE: 'false'
 
-      # Install API production deps in api/node_modules standalone — no workspace,
-      # no symlinks. @expense/shared is installed from the tarball (real files).
-      # Must run AFTER frontend build — this step strips devDeps from root node_modules.
-      - name: Install API production dependencies
-        working-directory: api
-        run: |
-          npm install --production --no-package-lock
-          node ../node_modules/.bin/prisma generate
-
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
@@ -73,7 +64,11 @@ jobs:
           api_location: 'api'
           output_location: ''
           skip_app_build: true
-          skip_api_build: true
+          # skip_api_build is intentionally omitted — Oryx must run so SWA can
+          # detect the Node.js runtime and configure the Function host.
+          # Oryx runs: npm install (picks up expense-shared tarball) + api_build_command.
+          # Our pre-compiled api/dist/ travels with the upload unchanged.
+          api_build_command: 'npx prisma generate'
           config_file_location: '.'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
