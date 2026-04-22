@@ -35,8 +35,9 @@ jobs:
           npm pack --pack-destination ../../api/
 
       # Install workspace deps (used by the frontend build and API tsc)
+      # Use npm ci so the lock file pins exact versions (TypeScript 5.9.3, rollup Linux binaries, etc.)
       - name: Install workspace dependencies
-        run: npm install
+        run: npm ci
 
       # Compile the API TypeScript using workspace-resolved types
       - name: Build API
