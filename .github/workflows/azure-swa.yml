@@ -26,20 +26,19 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Build and pack shared package
+        working-directory: packages/shared
+        run: |
+          npm install
+          npm run build
+          npm pack --pack-destination ../../api/
+
       - name: Install workspace dependencies
         run: npm ci
-
-      - name: Build shared package
-        run: npm run build --workspace=packages/shared
 
       - name: Run Prisma generate
         run: npx prisma generate
         working-directory: api
-
-      - name: Pack shared package into api
-        run: |
-          cd packages/shared
-          npm pack --pack-destination ../../api/
 
       - name: Build frontend
         run: npm run build --workspace=frontend
