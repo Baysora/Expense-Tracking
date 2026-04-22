@@ -46,14 +46,6 @@ jobs:
           npx prisma generate
           npx tsc
 
-      # Install API production deps in api/node_modules standalone — no workspace,
-      # no symlinks. @expense/shared is installed from the tarball (real files).
-      - name: Install API production dependencies
-        working-directory: api
-        run: |
-          npm install --production --no-package-lock
-          node ../node_modules/.bin/prisma generate
-
       - name: Build frontend
         run: npm run build --workspace=frontend
         env:
@@ -61,6 +53,15 @@ jobs:
           VITE_ENTRA_CLIENT_ID: ${{ secrets.ENTRA_CLIENT_ID }}
           VITE_API_SCOPE: ${{ secrets.ENTRA_API_SCOPE }}
           VITE_DEV_MODE: 'false'
+
+      # Install API production deps in api/node_modules standalone — no workspace,
+      # no symlinks. @expense/shared is installed from the tarball (real files).
+      # Must run AFTER frontend build — this step strips devDeps from root node_modules.
+      - name: Install API production dependencies
+        working-directory: api
+        run: |
+          npm install --production --no-package-lock
+          node ../node_modules/.bin/prisma generate
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
