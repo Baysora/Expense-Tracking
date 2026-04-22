@@ -117,26 +117,6 @@ export function Login() {
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
           </button>
 
-          {/* OR divider */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ flex: 1, height: 1, background: "var(--color-border)" }} />
-            <span style={{ fontSize: 12, color: "var(--color-text-placeholder)", fontWeight: 500 }}>or</span>
-            <span style={{ flex: 1, height: 1, background: "var(--color-border)" }} />
-          </div>
-
-          {/* Microsoft SSO */}
-          <button
-            type="button"
-            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, background: "white", border: "1.5px solid var(--color-border)", borderRadius: 10, padding: "10px", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", color: "var(--color-text)" }}
-          >
-            <svg width="16" height="16" viewBox="0 0 21 21" fill="none">
-              <rect x="1" y="1" width="9" height="9" fill="#f25022" />
-              <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
-              <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
-              <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
-            </svg>
-            Continue with Microsoft
-          </button>
         </form>
       </div>
 
