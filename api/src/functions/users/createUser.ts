@@ -1,6 +1,6 @@
 import { app, HttpRequest } from "@azure/functions";
 import { z } from "zod";
-import { Role } from "@expense/shared";
+import { Role } from "../../shared";
 import bcrypt from "bcryptjs";
 import { verifyToken, requireRoles } from "../../lib/auth";
 import { prisma } from "../../lib/prisma";

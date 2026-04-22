@@ -1,5 +1,5 @@
 import { app, HttpRequest } from "@azure/functions";
-import { Role } from "@expense/shared";
+import { Role } from "../../shared";
 import { verifyToken } from "../../lib/auth";
 import { prisma } from "../../lib/prisma";
 import { getHoldCoOpCoId, isHoldCoRole } from "../../lib/opco";
