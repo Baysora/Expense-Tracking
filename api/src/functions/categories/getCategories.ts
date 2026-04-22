@@ -18,7 +18,7 @@ app.http("getCategories", {
 
     let opCoId: string;
 
-    if (claims.role === Role.HOLDCO_ADMIN) {
+    if (claims.role === Role.HOLDCO_ADMIN || claims.role === Role.HOLDCO_MANAGER) {
       // Can query any OpCo's categories; default to HoldCo Internal
       opCoId = opCoIdParam ?? (await getHoldCoOpCoId());
     } else if (claims.role === Role.HOLDCO_USER) {

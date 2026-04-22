@@ -40,6 +40,18 @@ async function main() {
   });
 
   await prisma.user.upsert({
+    where: { email: "manager@holdco.com" },
+    update: {},
+    create: {
+      email: "manager@holdco.com",
+      name: "HoldCo Manager",
+      passwordHash: password,
+      role: "HOLDCO_MANAGER",
+      opCoId: null,
+    },
+  });
+
+  await prisma.user.upsert({
     where: { email: "holdco.user@holdco.com" },
     update: {},
     create: {
@@ -218,6 +230,7 @@ async function main() {
   console.log("│ Email                        │ Role              │ OpCo           │");
   console.log("├──────────────────────────────┼───────────────────┼────────────────┤");
   console.log("│ admin@holdco.com             │ HOLDCO_ADMIN      │ —              │");
+  console.log("│ manager@holdco.com           │ HOLDCO_MANAGER    │ —              │");
   console.log("│ holdco.user@holdco.com       │ HOLDCO_USER       │ —              │");
   console.log("│ opco.admin@acme.com          │ OPCO_ADMIN        │ Acme Corp      │");
   console.log("│ manager@acme.com             │ OPCO_MANAGER      │ Acme Corp      │");

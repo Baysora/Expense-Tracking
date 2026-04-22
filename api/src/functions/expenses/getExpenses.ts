@@ -21,7 +21,7 @@ app.http("getExpenses", {
     const where: Record<string, unknown> = {};
     if (status) where.status = status;
 
-    if (claims.role === Role.HOLDCO_ADMIN) {
+    if (claims.role === Role.HOLDCO_ADMIN || claims.role === Role.HOLDCO_MANAGER) {
       // Can see all expenses, optionally filtered by OpCo
       if (opCoIdParam) where.opCoId = opCoIdParam;
       if (mine) where.submittedById = claims.userId;

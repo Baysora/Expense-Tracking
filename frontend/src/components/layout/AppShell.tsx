@@ -8,7 +8,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   function getSidebar() {
     if (!user) return null;
-    if (user.role === Role.HOLDCO_ADMIN) return <HoldcoSidebar />;
+    if (user.role === Role.HOLDCO_ADMIN || user.role === Role.HOLDCO_MANAGER) return <HoldcoSidebar />;
     if (user.role === Role.OPCO_ADMIN || user.role === Role.OPCO_MANAGER) return <OpcoSidebar />;
     return <UserSidebar />;
   }

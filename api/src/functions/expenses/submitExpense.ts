@@ -12,7 +12,7 @@ app.http("submitExpense", {
   handler: async (req: HttpRequest) => {
     const claims = await verifyToken(req);
     if (!claims) return unauthorized();
-    if (!requireRoles(claims, Role.HOLDCO_ADMIN, Role.HOLDCO_USER, Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER)) return forbidden();
+    if (!requireRoles(claims, Role.HOLDCO_ADMIN, Role.HOLDCO_MANAGER, Role.HOLDCO_USER, Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER)) return forbidden();
 
     const id = req.params.id;
 
