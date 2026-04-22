@@ -39,7 +39,7 @@ jobs:
         run: npm ci
 
       # Compile the API TypeScript using workspace-resolved types
-      # api/dist/ is uploaded to SWA along with the source; Oryx won't re-compile
+      # api/dist/ is uploaded to SWA along with the source
       - name: Build API
         working-directory: api
         run: |
@@ -54,13 +54,22 @@ jobs:
           VITE_API_SCOPE: ${{ secrets.ENTRA_API_SCOPE }}
           VITE_DEV_MODE: 'false'
 
-      # Oryx runs npm install from api/.oryx_prod_node_modules/ (changes cwd).
-      # file:expense-shared-1.0.0.tgz then resolves relative to that dir, not api/.
-      # Pre-staging the tarball there ensures Oryx finds it.
-      - name: Pre-stage shared tarball for Oryx
+      # Oryx's npm install can't handle file: tarball deps (resolves path relative
+      # to its own working dir, and npm 10 deletes "null-integrity" tarballs on retry).
+      # Pre-populate api/node_modules/ in an isolated context so skip_api_build:true
+      # tells Oryx to deploy the folder as-is. Azure Functions runtime is detected
+      # from host.json + package.json, not from Oryx.
+      - name: Install API production dependencies (isolated)
         run: |
-          mkdir -p api/.oryx_prod_node_modules
-          cp api/expense-shared-1.0.0.tgz api/.oryx_prod_node_modules/
+          TMP=$(mktemp -d)
+          cp api/package.json "$TMP/"
+          cp api/expense-shared-1.0.0.tgz "$TMP/"
+          cp -r api/prisma "$TMP/prisma"
+          cd "$TMP"
+          npm install
+          node_modules/.bin/prisma generate --schema=prisma/schema.prisma
+          rm -rf prisma
+          cp -r node_modules/ $GITHUB_WORKSPACE/api/node_modules/
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
@@ -72,11 +81,7 @@ jobs:
           api_location: 'api'
           output_location: ''
           skip_app_build: true
-          # skip_api_build is intentionally omitted — Oryx must run so SWA can
-          # detect the Node.js runtime and configure the Function host.
-          # Oryx runs: npm install (picks up expense-shared tarball) + api_build_command.
-          # Our pre-compiled api/dist/ travels with the upload unchanged.
-          api_build_command: 'npx prisma generate'
+          skip_api_build: true
           config_file_location: '.'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
