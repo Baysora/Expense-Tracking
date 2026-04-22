@@ -150,7 +150,8 @@ export function HoldcoSidebar() {
       { label: "OpCos", path: "/holdco/opcos", icon: <Building2 className="h-4 w-4" /> },
       { label: "Users", path: "/holdco/users", icon: <Users className="h-4 w-4" /> },
     ] : []),
-    { label: "Expenses", path: "/holdco/expenses", icon: <Receipt className="h-4 w-4" /> },
+    { label: "All Expenses", path: "/holdco/expenses", icon: <Receipt className="h-4 w-4" /> },
+    { label: "Pending Review", path: "/holdco/review", icon: <CheckSquare className="h-4 w-4" /> },
     ...(isAdmin ? [
       { label: "Categories", path: "/holdco/categories", icon: <Tag className="h-4 w-4" /> },
     ] : []),
@@ -162,14 +163,17 @@ export function HoldcoSidebar() {
 
 export function OpcoSidebar() {
   const { user } = useAuth();
+  const isAdmin = user?.role === Role.OPCO_ADMIN;
+  const canApprove = user?.role === Role.OPCO_ADMIN || user?.role === Role.OPCO_MANAGER;
+
   const navItems: NavItem[] = [
     { label: "Dashboard", path: "/opco/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-    { label: "Users", path: "/opco/users", icon: <Users className="h-4 w-4" /> },
+    ...(isAdmin ? [{ label: "Users", path: "/opco/users", icon: <Users className="h-4 w-4" /> }] : []),
+    { label: "OpCo Expenses", path: "/opco/expenses", icon: <Receipt className="h-4 w-4" /> },
     { label: "Categories", path: "/opco/categories", icon: <Tag className="h-4 w-4" /> },
-    { label: "Expenses", path: "/opco/expenses", icon: <Receipt className="h-4 w-4" /> },
-    ...(user?.role === Role.OPCO_ADMIN || user?.role === Role.OPCO_MANAGER
-      ? [{ label: "Approvals", path: "/opco/approvals", icon: <CheckSquare className="h-4 w-4" /> }]
-      : []),
+    ...(canApprove ? [{ label: "Pending Review", path: "/opco/review", icon: <CheckSquare className="h-4 w-4" /> }] : []),
+    { label: "My Expenses", path: "/dashboard", icon: <ChevronRight className="h-4 w-4" /> },
+    { label: "Submit Expense", path: "/expenses/new", icon: <ChevronRight className="h-4 w-4" /> },
   ];
   return <Sidebar navItems={navItems} />;
 }

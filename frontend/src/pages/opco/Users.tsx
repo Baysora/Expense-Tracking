@@ -12,8 +12,8 @@ const ROLE_LABELS: Record<Role, string> = {
   [Role.HOLDCO_MANAGER]: "HoldCo Manager",
   [Role.HOLDCO_USER]: "HoldCo User",
   [Role.OPCO_ADMIN]: "OpCo Admin",
-  [Role.OPCO_MANAGER]: "Manager",
-  [Role.OPCO_USER]: "User",
+  [Role.OPCO_MANAGER]: "OpCo Manager",
+  [Role.OPCO_USER]: "OpCo User",
 };
 
 function CreateUserForm({ opCoId, onSuccess }: { opCoId: string; onSuccess: () => void }) {
@@ -64,6 +64,7 @@ function CreateUserForm({ opCoId, onSuccess }: { opCoId: string; onSuccess: () =
 export function OpcoUsers() {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const isAdmin = user?.role === Role.OPCO_ADMIN;
   const [showForm, setShowForm] = useState(false);
 
   const { data: users, isLoading } = useQuery({ queryKey: ["users"], queryFn: userApi.list });
@@ -84,9 +85,11 @@ export function OpcoUsers() {
           <h1 className="text-2xl font-bold" style={{ color: "var(--color-text)" }}>OpCo Users</h1>
           <p className="mt-1 text-sm" style={{ color: "var(--color-text-muted)" }}>{users?.length ?? 0} users in your organisation</p>
         </div>
-        <button onClick={() => setShowForm((v) => !v)} className="btn-primary">
-          <Plus className="h-4 w-4" /> New User
-        </button>
+        {isAdmin && (
+          <button onClick={() => setShowForm((v) => !v)} className="btn-primary">
+            <Plus className="h-4 w-4" /> New User
+          </button>
+        )}
       </div>
 
       {showForm && (
@@ -115,10 +118,12 @@ export function OpcoUsers() {
                   <td className="px-4 py-3"><span className={u.isActive ? "badge-success" : "badge-neutral"}>{u.isActive ? "Active" : "Inactive"}</span></td>
                   <td className="px-4 py-3" style={{ color: "var(--color-text-muted)" }}>{formatDate(u.createdAt)}</td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => toggle.mutate({ id: u.id, isActive: !u.isActive })} className="btn-secondary px-2 py-1 text-xs">
-                      {u.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
-                      {u.isActive ? "Deactivate" : "Activate"}
-                    </button>
+                    {isAdmin && (
+                      <button onClick={() => toggle.mutate({ id: u.id, isActive: !u.isActive })} className="btn-secondary px-2 py-1 text-xs">
+                        {u.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+                        {u.isActive ? "Deactivate" : "Activate"}
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -136,9 +141,11 @@ export function OpcoUsers() {
                   <span className={u.isActive ? "badge-success" : "badge-neutral"}>{u.isActive ? "Active" : "Inactive"}</span>
                 </div>
               </div>
-              <button onClick={() => toggle.mutate({ id: u.id, isActive: !u.isActive })} className="btn-secondary px-2 py-1 text-xs ml-3">
-                {u.isActive ? "Deactivate" : "Activate"}
-              </button>
+              {isAdmin && (
+                <button onClick={() => toggle.mutate({ id: u.id, isActive: !u.isActive })} className="btn-secondary px-2 py-1 text-xs ml-3">
+                  {u.isActive ? "Deactivate" : "Activate"}
+                </button>
+              )}
             </div>
           ))}
         </div>

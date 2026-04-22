@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { categoryApi, opcoApi } from "@/lib/api";
-import { CategoryStatus, ExpenseCategory, OpCo } from "@expense/shared";
+import { CategoryStatus, ExpenseCategory, OpCo, Role } from "@expense/shared";
 import { Plus, Loader2, Tag, Globe, Copy, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
 
 type SidebarSelection =
   | { kind: "opco"; id: string }
@@ -243,6 +244,8 @@ function NewCategoryModal({
 
 export function HoldcoCategories() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user?.role === Role.HOLDCO_ADMIN;
   const [selection, setSelection] = useState<SidebarSelection | null>(null);
   const [statusFilter, setStatusFilter] = useState<CategoryStatus>(CategoryStatus.ACTIVE);
   const [showNewModal, setShowNewModal] = useState(false);
@@ -329,18 +332,20 @@ export function HoldcoCategories() {
             Create and manage expense categories across all OpCos
           </p>
         </div>
-        <div className="flex gap-2">
-          {effectiveSelection.kind === "opco" && selectedOpCo && (
-            <button onClick={() => setShowCopyModal(true)} className="btn-secondary">
-              <Copy className="h-4 w-4" />
-              Copy Schema
+        {isAdmin && (
+          <div className="flex gap-2">
+            {effectiveSelection.kind === "opco" && selectedOpCo && (
+              <button onClick={() => setShowCopyModal(true)} className="btn-secondary">
+                <Copy className="h-4 w-4" />
+                Copy Schema
+              </button>
+            )}
+            <button onClick={() => setShowNewModal(true)} className="btn-primary">
+              <Plus className="h-4 w-4" />
+              New Category
             </button>
-          )}
-          <button onClick={() => setShowNewModal(true)} className="btn-primary">
-            <Plus className="h-4 w-4" />
-            New Category
-          </button>
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-4 lg:flex-row">
@@ -451,35 +456,49 @@ export function HoldcoCategories() {
                             {cat.name}
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <button
-                              onClick={() => toggleAttachment.mutate({ id: cat.id, requiresAttachment: !cat.requiresAttachment })}
-                              title={cat.requiresAttachment ? "Attachment required — click to disable" : "No attachment required — click to enable"}
-                              style={{ color: cat.requiresAttachment ? "var(--color-success)" : "var(--color-text-muted)" }}
-                            >
-                              {cat.requiresAttachment ? <ToggleRight className="h-5 w-5" /> : <ToggleLeft className="h-5 w-5" />}
-                            </button>
+                            {isAdmin ? (
+                              <button
+                                onClick={() => toggleAttachment.mutate({ id: cat.id, requiresAttachment: !cat.requiresAttachment })}
+                                title={cat.requiresAttachment ? "Attachment required — click to disable" : "No attachment required — click to enable"}
+                                style={{ color: cat.requiresAttachment ? "var(--color-success)" : "var(--color-text-muted)" }}
+                              >
+                                {cat.requiresAttachment ? <ToggleRight className="h-5 w-5" /> : <ToggleLeft className="h-5 w-5" />}
+                              </button>
+                            ) : (
+                              <span style={{ color: cat.requiresAttachment ? "var(--color-success)" : "var(--color-text-muted)" }}>
+                                {cat.requiresAttachment ? <ToggleRight className="h-5 w-5 inline" /> : <ToggleLeft className="h-5 w-5 inline" />}
+                              </span>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <button
-                              onClick={() => setStatus.mutate({
-                                id: cat.id,
-                                status: cat.status === CategoryStatus.ACTIVE ? CategoryStatus.INACTIVE : CategoryStatus.ACTIVE,
-                              })}
-                              title={cat.status === CategoryStatus.ACTIVE ? "Active — click to deactivate" : "Inactive — click to activate"}
-                              style={{ color: cat.status === CategoryStatus.ACTIVE ? "var(--color-success)" : "var(--color-text-muted)" }}
-                            >
-                              {cat.status === CategoryStatus.ACTIVE ? <ToggleRight className="h-5 w-5" /> : <ToggleLeft className="h-5 w-5" />}
-                            </button>
+                            {isAdmin ? (
+                              <button
+                                onClick={() => setStatus.mutate({
+                                  id: cat.id,
+                                  status: cat.status === CategoryStatus.ACTIVE ? CategoryStatus.INACTIVE : CategoryStatus.ACTIVE,
+                                })}
+                                title={cat.status === CategoryStatus.ACTIVE ? "Active — click to deactivate" : "Inactive — click to activate"}
+                                style={{ color: cat.status === CategoryStatus.ACTIVE ? "var(--color-success)" : "var(--color-text-muted)" }}
+                              >
+                                {cat.status === CategoryStatus.ACTIVE ? <ToggleRight className="h-5 w-5" /> : <ToggleLeft className="h-5 w-5" />}
+                              </button>
+                            ) : (
+                              <span style={{ color: cat.status === CategoryStatus.ACTIVE ? "var(--color-success)" : "var(--color-text-muted)" }}>
+                                {cat.status === CategoryStatus.ACTIVE ? <ToggleRight className="h-5 w-5 inline" /> : <ToggleLeft className="h-5 w-5 inline" />}
+                              </span>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <button
-                              onClick={() => handleDelete(cat)}
-                              title="Permanently delete this category"
-                              className="hover:text-red-500 transition-colors"
-                              style={{ color: "var(--color-text-muted)" }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            {isAdmin && (
+                              <button
+                                onClick={() => handleDelete(cat)}
+                                title="Permanently delete this category"
+                                className="hover:text-red-500 transition-colors"
+                                style={{ color: "var(--color-text-muted)" }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
