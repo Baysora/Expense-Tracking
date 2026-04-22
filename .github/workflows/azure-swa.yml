@@ -34,7 +34,7 @@ jobs:
           npm pack --pack-destination ../../api/
 
       - name: Install workspace dependencies
-        run: npm ci
+        run: npm install --no-fund --no-audit
 
       - name: Run Prisma generate
         run: npx prisma generate
