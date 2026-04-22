@@ -54,8 +54,8 @@ jobs:
           api_location: 'api'
           output_location: ''
           skip_app_build: true
-          # Oryx runs npm install (no file: deps — clean) then prisma generate
-          api_build_command: 'npx prisma generate'
+          # Oryx runs npm install (no file: deps — clean) then prisma generate + tsc
+          api_build_command: 'npx prisma generate && npx tsc'
           config_file_location: '.'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
