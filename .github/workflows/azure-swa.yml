@@ -24,8 +24,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
+      # Build shared first and produce a tarball so the API can install it
+      # without relying on workspace symlinks (which break in Oryx/zip contexts)
       - name: Build and pack shared package
         working-directory: packages/shared
         run: |
@@ -33,12 +34,24 @@ jobs:
           npm run build
           npm pack --pack-destination ../../api/
 
+      # Install workspace deps (used by the frontend build and API tsc)
       - name: Install workspace dependencies
-        run: npm install --no-fund --no-audit
+        run: npm install
 
-      - name: Run Prisma generate
-        run: npx prisma generate
+      # Compile the API TypeScript using workspace-resolved types
+      - name: Build API
         working-directory: api
+        run: |
+          npx prisma generate
+          npx tsc
+
+      # Install API production deps in api/node_modules standalone — no workspace,
+      # no symlinks. @expense/shared is installed from the tarball (real files).
+      - name: Install API production dependencies
+        working-directory: api
+        run: |
+          npm install --production --no-package-lock
+          node ../node_modules/.bin/prisma generate
 
       - name: Build frontend
         run: npm run build --workspace=frontend
@@ -58,6 +71,7 @@ jobs:
           api_location: 'api'
           output_location: ''
           skip_app_build: true
+          skip_api_build: true
           config_file_location: '.'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
