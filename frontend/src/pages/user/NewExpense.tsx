@@ -25,7 +25,7 @@ export function NewExpense() {
     categoryId: "",
   });
 
-  const isHoldCoRole = user?.role === Role.HOLDCO_ADMIN || user?.role === Role.HOLDCO_USER;
+  const isHoldCoRole = user?.role === Role.HOLDCO_ADMIN || user?.role === Role.HOLDCO_MANAGER || user?.role === Role.HOLDCO_USER;
 
   const { data: categories, isLoading: catLoading } = useQuery({
     queryKey: ["categories", user?.opCoId],

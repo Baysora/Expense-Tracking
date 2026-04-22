@@ -26,7 +26,7 @@ app.http("exportExpenses", {
   handler: async (req: HttpRequest) => {
     const claims = await verifyToken(req);
     if (!claims) return unauthorized();
-    if (!requireRoles(claims, Role.HOLDCO_ADMIN, Role.OPCO_ADMIN, Role.OPCO_MANAGER)) return forbidden();
+    if (!requireRoles(claims, Role.HOLDCO_ADMIN, Role.HOLDCO_MANAGER, Role.OPCO_ADMIN, Role.OPCO_MANAGER)) return forbidden();
 
     const url = new URL(req.url);
     const rawFormat = url.searchParams.get("format") ?? "csv";
@@ -40,7 +40,7 @@ app.http("exportExpenses", {
 
     // Build where clause respecting role
     const where: Record<string, unknown> = {};
-    if (claims.role === Role.HOLDCO_ADMIN) {
+    if (claims.role === Role.HOLDCO_ADMIN || claims.role === Role.HOLDCO_MANAGER) {
       if (opCoIdParam) where.opCoId = opCoIdParam;
     } else {
       if (!claims.opCoId) return forbidden("No OpCo associated with this account");

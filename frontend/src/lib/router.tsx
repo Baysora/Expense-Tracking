@@ -6,6 +6,7 @@ import { useAuth } from "./AuthContext";
 export function getRoleHome(role: Role): string {
   switch (role) {
     case Role.HOLDCO_ADMIN:
+    case Role.HOLDCO_MANAGER:
       return "/holdco/dashboard";
     case Role.HOLDCO_USER:
       return "/dashboard";

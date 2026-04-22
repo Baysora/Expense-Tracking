@@ -29,7 +29,7 @@ app.http("getExpenseById", {
 
     let expense;
 
-    if (claims.role === Role.HOLDCO_ADMIN) {
+    if (claims.role === Role.HOLDCO_ADMIN || claims.role === Role.HOLDCO_MANAGER) {
       expense = await prisma.expense.findFirst({ where: { id }, include: includeOpts });
     } else if (claims.role === Role.HOLDCO_USER) {
       const holdCoOpCoId = await getHoldCoOpCoId();

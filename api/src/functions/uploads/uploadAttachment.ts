@@ -15,12 +15,12 @@ app.http("uploadAttachment", {
   handler: async (req: HttpRequest) => {
     const claims = await verifyToken(req);
     if (!claims) return unauthorized();
-    if (!requireRoles(claims, Role.HOLDCO_ADMIN, Role.HOLDCO_USER, Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER)) return forbidden();
+    if (!requireRoles(claims, Role.HOLDCO_ADMIN, Role.HOLDCO_MANAGER, Role.HOLDCO_USER, Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER)) return forbidden();
 
     // Resolve opCoId for HoldCo roles
     let opCoId = claims.opCoId;
     if (!opCoId) {
-      if (claims.role === Role.HOLDCO_ADMIN || claims.role === Role.HOLDCO_USER) {
+      if (claims.role === Role.HOLDCO_ADMIN || claims.role === Role.HOLDCO_MANAGER || claims.role === Role.HOLDCO_USER) {
         opCoId = await getHoldCoOpCoId();
       } else {
         return forbidden("No OpCo associated with this account");

@@ -17,7 +17,7 @@ app.http("reviewExpense", {
   handler: async (req: HttpRequest) => {
     const claims = await verifyToken(req);
     if (!claims) return unauthorized();
-    if (!requireRoles(claims, Role.HOLDCO_ADMIN, Role.OPCO_ADMIN, Role.OPCO_MANAGER)) return forbidden();
+    if (!requireRoles(claims, Role.HOLDCO_ADMIN, Role.HOLDCO_MANAGER, Role.OPCO_ADMIN, Role.OPCO_MANAGER)) return forbidden();
 
     const id = req.params.id;
     const body = await req.json().catch(() => null);
@@ -25,7 +25,7 @@ app.http("reviewExpense", {
     if (!parsed.success) return badRequest(parsed.error.errors[0].message);
 
     const where =
-      claims.role === Role.HOLDCO_ADMIN
+      claims.role === Role.HOLDCO_ADMIN || claims.role === Role.HOLDCO_MANAGER
         ? { id }
         : { id, opCoId: claims.opCoId! };
 

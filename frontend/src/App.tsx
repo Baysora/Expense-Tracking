@@ -50,7 +50,7 @@ export default function App() {
             <Route
               path="/holdco/*"
               element={
-                <ProtectedRoute allowedRoles={[Role.HOLDCO_ADMIN]}>
+                <ProtectedRoute allowedRoles={[Role.HOLDCO_ADMIN, Role.HOLDCO_MANAGER]}>
                   <AppShell>
                     <Routes>
                       <Route path="dashboard" element={<HoldcoDashboard />} />
@@ -88,7 +88,7 @@ export default function App() {
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute allowedRoles={[Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER, Role.HOLDCO_USER, Role.HOLDCO_ADMIN]}>
+                <ProtectedRoute allowedRoles={[Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER, Role.HOLDCO_USER, Role.HOLDCO_ADMIN, Role.HOLDCO_MANAGER]}>
                   <AppShell>
                     <UserDashboard />
                   </AppShell>
@@ -98,7 +98,7 @@ export default function App() {
             <Route
               path="/expenses/new"
               element={
-                <ProtectedRoute allowedRoles={[Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER, Role.HOLDCO_USER, Role.HOLDCO_ADMIN]}>
+                <ProtectedRoute allowedRoles={[Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER, Role.HOLDCO_USER, Role.HOLDCO_ADMIN, Role.HOLDCO_MANAGER]}>
                   <AppShell>
                     <NewExpense />
                   </AppShell>
@@ -108,7 +108,7 @@ export default function App() {
             <Route
               path="/expenses/:id"
               element={
-                <ProtectedRoute allowedRoles={[Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER, Role.HOLDCO_USER, Role.HOLDCO_ADMIN]}>
+                <ProtectedRoute allowedRoles={[Role.OPCO_USER, Role.OPCO_ADMIN, Role.OPCO_MANAGER, Role.HOLDCO_USER, Role.HOLDCO_ADMIN, Role.HOLDCO_MANAGER]}>
                   <AppShell>
                     <ExpenseDetail />
                   </AppShell>

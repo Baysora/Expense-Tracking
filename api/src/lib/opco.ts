@@ -14,5 +14,5 @@ export async function getHoldCoOpCoId(): Promise<string> {
 }
 
 export function isHoldCoRole(role: string): boolean {
-  return role === "HOLDCO_ADMIN" || role === "HOLDCO_USER";
+  return role === "HOLDCO_ADMIN" || role === "HOLDCO_MANAGER" || role === "HOLDCO_USER";
 }

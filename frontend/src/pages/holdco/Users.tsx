@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/utils";
 
 const ROLE_LABELS: Record<Role, string> = {
   [Role.HOLDCO_ADMIN]: "HoldCo Admin",
+  [Role.HOLDCO_MANAGER]: "HoldCo Manager",
   [Role.HOLDCO_USER]: "HoldCo User",
   [Role.OPCO_ADMIN]: "OpCo Admin",
   [Role.OPCO_MANAGER]: "OpCo Manager",
@@ -36,7 +37,7 @@ function CreateUserForm({ onSuccess }: { onSuccess: () => void }) {
     onError: (e: Error) => setError(e.message),
   });
 
-  const needsOpCo = form.role !== Role.HOLDCO_ADMIN;
+  const needsOpCo = form.role !== Role.HOLDCO_ADMIN && form.role !== Role.HOLDCO_MANAGER;
 
   return (
     <form
