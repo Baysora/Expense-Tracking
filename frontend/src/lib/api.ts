@@ -1,4 +1,4 @@
-import { msalInstance, loginRequest, getDevAuthHeader, DEV_MODE } from "./auth";
+import { getToken } from "./auth";
 import type {
   OpCo,
   User,
@@ -17,21 +17,8 @@ import type {
 const BASE_URL = "/api";
 
 async function getAuthHeader(): Promise<string | null> {
-  if (DEV_MODE) return getDevAuthHeader();
-
-  const accounts = msalInstance.getAllAccounts();
-  if (accounts.length === 0) return null;
-
-  try {
-    const result = await msalInstance.acquireTokenSilent({
-      ...loginRequest,
-      account: accounts[0],
-    });
-    return `Bearer ${result.accessToken}`;
-  } catch {
-    await msalInstance.acquireTokenRedirect(loginRequest);
-    return null;
-  }
+  const token = getToken();
+  return token ? `Bearer ${token}` : null;
 }
 
 async function request<T>(

@@ -1,107 +1,34 @@
 import { HttpRequest } from "@azure/functions";
 import jwt from "jsonwebtoken";
-import jwksClient from "jwks-rsa";
 import { Role, TokenClaims } from "../shared";
-import { prisma } from "./prisma";
-import bcrypt from "bcryptjs";
 
-const ENTRA_TENANT = process.env.ENTRA_TENANT_NAME;
-const ENTRA_AUDIENCE = process.env.ENTRA_AUDIENCE;
-const DEV_MODE = process.env.DEV_MODE === "true";
-
-let jwksClientInstance: ReturnType<typeof jwksClient> | null = null;
-
-function getJwksClient() {
-  if (!jwksClientInstance && ENTRA_TENANT) {
-    jwksClientInstance = jwksClient({
-      jwksUri: `https://${ENTRA_TENANT}.ciamlogin.com/${ENTRA_TENANT}.onmicrosoft.com/discovery/v2.0/keys`,
-      cache: true,
-      cacheMaxEntries: 5,
-      cacheMaxAge: 600000,
-    });
-  }
-  return jwksClientInstance;
-}
-
-async function getSigningKey(kid: string): Promise<string> {
-  const client = getJwksClient();
-  if (!client) throw new Error("JWKS client not configured");
-  const key = await client.getSigningKey(kid);
-  return key.getPublicKey();
-}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export async function verifyToken(req: HttpRequest): Promise<TokenClaims | null> {
-  if (DEV_MODE) return verifyDevToken(req);
-
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
 
   const token = authHeader.slice(7);
 
+  if (!JWT_SECRET) return null;
+
   try {
-    // 1. Verify JWT signature — proves the user authenticated via Entra External ID
-    const decoded = jwt.decode(token, { complete: true });
-    if (!decoded || typeof decoded === "string") return null;
-    const kid = decoded.header.kid;
-    if (!kid) return null;
+    const payload = jwt.verify(token, JWT_SECRET, {
+      algorithms: ["HS256"],
+    }) as TokenClaims & Record<string, unknown>;
 
-    const publicKey = await getSigningKey(kid);
-    const payload = jwt.verify(token, publicKey, {
-      algorithms: ["RS256"],
-      audience: ENTRA_AUDIENCE,
-    }) as Record<string, unknown>;
-
-    // 2. Extract email — Entra External ID uses `email` or `preferred_username`
-    const email = (payload["email"] as string) ?? (payload["preferred_username"] as string);
-    if (!email) return null;
-
-    // 3. Look up user in our DB for role + opCoId — no custom token claims needed
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true, email: true, name: true, role: true, opCoId: true, isActive: true },
-    });
-
-    if (!user || !user.isActive) return null;
+    if (!payload.userId || !payload.email || !payload.role) return null;
 
     return {
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role as Role,
-      opCoId: user.opCoId,
+      userId: payload.userId,
+      email: payload.email,
+      name: payload.name,
+      role: payload.role as Role,
+      opCoId: payload.opCoId ?? null,
     };
   } catch {
     return null;
   }
-}
-
-// Dev-only: accepts Bearer dev:<base64(email:password)>, looks up user in DB
-async function verifyDevToken(req: HttpRequest): Promise<TokenClaims | null> {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer dev:")) return null;
-
-  const credentials = Buffer.from(authHeader.slice(11), "base64").toString();
-  const colonIdx = credentials.indexOf(":");
-  if (colonIdx === -1) return null;
-  const email = credentials.slice(0, colonIdx);
-  const password = credentials.slice(colonIdx + 1);
-
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true, email: true, name: true, role: true, opCoId: true, passwordHash: true, isActive: true },
-  });
-
-  if (!user || !user.isActive) return null;
-  const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) return null;
-
-  return {
-    userId: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role as Role,
-    opCoId: user.opCoId,
-  };
 }
 
 export function requireRoles(claims: TokenClaims | null, ...roles: Role[]): claims is TokenClaims {
