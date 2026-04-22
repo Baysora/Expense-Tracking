@@ -4,7 +4,7 @@
   "private": true,
   "main": "dist/src/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "dev": "ts-node --transpile-only -r tsconfig-paths/register src/localServer.ts",
     "watch": "concurrently \"tsc -w\" \"func start --verbose\""
   },
