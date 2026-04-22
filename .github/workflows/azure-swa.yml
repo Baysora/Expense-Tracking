@@ -54,6 +54,14 @@ jobs:
           VITE_API_SCOPE: ${{ secrets.ENTRA_API_SCOPE }}
           VITE_DEV_MODE: 'false'
 
+      # Oryx runs npm install from api/.oryx_prod_node_modules/ (changes cwd).
+      # file:expense-shared-1.0.0.tgz then resolves relative to that dir, not api/.
+      # Pre-staging the tarball there ensures Oryx finds it.
+      - name: Pre-stage shared tarball for Oryx
+        run: |
+          mkdir -p api/.oryx_prod_node_modules
+          cp api/expense-shared-1.0.0.tgz api/.oryx_prod_node_modules/
+
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
