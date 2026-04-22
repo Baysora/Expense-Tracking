@@ -1,7 +1,7 @@
 import { HttpRequest } from "@azure/functions";
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
-import { Role, TokenClaims } from "@expense/shared";
+import { Role, TokenClaims } from "../shared";
 import { prisma } from "./prisma";
 import bcrypt from "bcryptjs";
 
