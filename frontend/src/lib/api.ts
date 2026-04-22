@@ -30,7 +30,7 @@ async function request<T>(
     ...(options.body && !(options.body instanceof FormData)
       ? { "Content-Type": "application/json" }
       : {}),
-    ...(authHeader ? { Authorization: authHeader } : {}),
+    ...(authHeader ? { "x-authorization": authHeader } : {}),
     ...(options.headers as Record<string, string> | undefined),
   };
 

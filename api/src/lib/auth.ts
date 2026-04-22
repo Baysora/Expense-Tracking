@@ -5,7 +5,8 @@ import { Role, TokenClaims } from "../shared";
 const JWT_SECRET = process.env.JWT_SECRET;
 
 export async function verifyToken(req: HttpRequest): Promise<TokenClaims | null> {
-  const authHeader = req.headers.get("Authorization");
+  // SWA strips the standard Authorization header; use x-authorization instead
+  const authHeader = req.headers.get("x-authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
 
   const token = authHeader.slice(7);
