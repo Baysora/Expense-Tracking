@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { opcoApi } from "@/lib/api";
-import { OpCo } from "@expense/shared";
+import { OpCo, Role } from "@expense/shared";
 import { Plus, Loader2, Building2, Power, PowerOff, Save } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { useAuth } from "@/lib/AuthContext";
 
 function OpCoForm({ onSuccess }: { onSuccess: () => void }) {
   const qc = useQueryClient();
@@ -152,6 +153,8 @@ function AttachmentRulesPanel({ opco }: { opco: OpCo }) {
 
 export function HoldcoOpCos() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user?.role === Role.HOLDCO_ADMIN;
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { data: opcos, isLoading } = useQuery({ queryKey: ["opcos"], queryFn: opcoApi.list });
@@ -181,10 +184,12 @@ export function HoldcoOpCos() {
             Manage your OpCo environments
           </p>
         </div>
-        <button onClick={() => setShowForm((v) => !v)} className="btn-primary">
-          <Plus className="h-4 w-4" />
-          New OpCo
-        </button>
+        {isAdmin && (
+          <button onClick={() => setShowForm((v) => !v)} className="btn-primary">
+            <Plus className="h-4 w-4" />
+            New OpCo
+          </button>
+        )}
       </div>
 
       {showForm && (
@@ -230,22 +235,24 @@ export function HoldcoOpCos() {
                           {formatDate(o.createdAt)}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => setExpandedId(expandedId === o.id ? null : o.id)}
-                              className="btn-secondary px-2 py-1.5 text-xs"
-                            >
-                              {expandedId === o.id ? "Hide Rules" : "Attachment Rules"}
-                            </button>
-                            <button
-                              onClick={() => toggle.mutate({ id: o.id, isActive: !o.isActive })}
-                              className={o.isActive ? "btn-secondary" : "btn-primary"}
-                              title={o.isActive ? "Deactivate" : "Activate"}
-                            >
-                              {o.isActive ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
-                              {o.isActive ? "Deactivate" : "Activate"}
-                            </button>
-                          </div>
+                          {isAdmin && (
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => setExpandedId(expandedId === o.id ? null : o.id)}
+                                className="btn-secondary px-2 py-1.5 text-xs"
+                              >
+                                {expandedId === o.id ? "Hide Rules" : "Attachment Rules"}
+                              </button>
+                              <button
+                                onClick={() => toggle.mutate({ id: o.id, isActive: !o.isActive })}
+                                className={o.isActive ? "btn-secondary" : "btn-primary"}
+                                title={o.isActive ? "Deactivate" : "Activate"}
+                              >
+                                {o.isActive ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                                {o.isActive ? "Deactivate" : "Activate"}
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                       {expandedId === o.id && (
@@ -273,21 +280,27 @@ export function HoldcoOpCos() {
                         {o.isActive ? "Active" : "Inactive"}
                       </span>
                     </div>
-                    <button
-                      onClick={() => toggle.mutate({ id: o.id, isActive: !o.isActive })}
-                      className="btn-secondary px-3 py-1.5 text-xs"
-                    >
-                      {o.isActive ? "Deactivate" : "Activate"}
-                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => toggle.mutate({ id: o.id, isActive: !o.isActive })}
+                        className="btn-secondary px-3 py-1.5 text-xs"
+                      >
+                        {o.isActive ? "Deactivate" : "Activate"}
+                      </button>
+                    )}
                   </div>
-                  <button
-                    onClick={() => setExpandedId(expandedId === o.id ? null : o.id)}
-                    className="text-xs w-full text-left"
-                    style={{ color: "var(--color-primary)" }}
-                  >
-                    {expandedId === o.id ? "Hide attachment rules ▲" : "Show attachment rules ▼"}
-                  </button>
-                  {expandedId === o.id && <AttachmentRulesPanel opco={o} />}
+                  {isAdmin && (
+                    <>
+                      <button
+                        onClick={() => setExpandedId(expandedId === o.id ? null : o.id)}
+                        className="text-xs w-full text-left"
+                        style={{ color: "var(--color-primary)" }}
+                      >
+                        {expandedId === o.id ? "Hide attachment rules ▲" : "Show attachment rules ▼"}
+                      </button>
+                      {expandedId === o.id && <AttachmentRulesPanel opco={o} />}
+                    </>
+                  )}
                 </div>
               ))}
             </div>

@@ -12,7 +12,7 @@ export function UserDashboard() {
   const { user } = useAuth();
   const { data: expenses, isLoading } = useQuery({
     queryKey: ["my-expenses"],
-    queryFn: () => expenseApi.list(),
+    queryFn: () => expenseApi.list({ mine: true }),
   });
 
   const pending = expenses?.filter((e) => e.status === ExpenseStatus.SUBMITTED || e.status === ExpenseStatus.DRAFT) ?? [];

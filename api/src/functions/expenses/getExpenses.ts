@@ -33,7 +33,7 @@ app.http("getExpenses", {
     } else {
       if (!claims.opCoId) return forbidden("No OpCo associated with this account");
       where.opCoId = claims.opCoId;
-      if (claims.role === Role.OPCO_USER) {
+      if (claims.role === Role.OPCO_USER || mine) {
         where.submittedById = claims.userId;
       }
     }

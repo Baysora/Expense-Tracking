@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { userApi, opcoApi } from "@/lib/api";
 import { Role, User } from "@expense/shared";
 import { Plus, Loader2, UserCheck, UserX } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
 import { formatDate } from "@/lib/utils";
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -95,6 +96,8 @@ function CreateUserForm({ onSuccess }: { onSuccess: () => void }) {
 export function HoldcoUsers() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const { user: currentUser } = useAuth();
+  const isAdmin = currentUser?.role === Role.HOLDCO_ADMIN;
   const { data: users, isLoading } = useQuery({ queryKey: ["users"], queryFn: userApi.list });
 
   const toggle = useMutation({
@@ -114,9 +117,11 @@ export function HoldcoUsers() {
           <h1 className="text-2xl font-bold" style={{ color: "var(--color-text)" }}>All Users</h1>
           <p className="mt-1 text-sm" style={{ color: "var(--color-text-muted)" }}>{users?.length ?? 0} users across all OpCos</p>
         </div>
-        <button onClick={() => setShowForm((v) => !v)} className="btn-primary">
-          <Plus className="h-4 w-4" /> New User
-        </button>
+        {isAdmin && (
+          <button onClick={() => setShowForm((v) => !v)} className="btn-primary">
+            <Plus className="h-4 w-4" /> New User
+          </button>
+        )}
       </div>
 
       {showForm && (
@@ -151,14 +156,16 @@ export function HoldcoUsers() {
                   </td>
                   <td className="px-4 py-3" style={{ color: "var(--color-text-muted)" }}>{formatDate(u.createdAt)}</td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => toggle.mutate({ id: u.id, isActive: !u.isActive })}
-                      className="btn-secondary px-3 py-1.5 text-xs"
-                      title={u.isActive ? "Deactivate" : "Activate"}
-                    >
-                      {u.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
-                      {u.isActive ? "Deactivate" : "Activate"}
-                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => toggle.mutate({ id: u.id, isActive: !u.isActive })}
+                        className="btn-secondary px-3 py-1.5 text-xs"
+                        title={u.isActive ? "Deactivate" : "Activate"}
+                      >
+                        {u.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+                        {u.isActive ? "Deactivate" : "Activate"}
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -179,9 +186,11 @@ export function HoldcoUsers() {
                   <span className={u.isActive ? "badge-success" : "badge-neutral"}>{u.isActive ? "Active" : "Inactive"}</span>
                 </div>
               </div>
-              <button onClick={() => toggle.mutate({ id: u.id, isActive: !u.isActive })} className="btn-secondary px-2 py-1 text-xs ml-3 flex-shrink-0">
-                {u.isActive ? "Deactivate" : "Activate"}
-              </button>
+              {isAdmin && (
+                <button onClick={() => toggle.mutate({ id: u.id, isActive: !u.isActive })} className="btn-secondary px-2 py-1 text-xs ml-3 flex-shrink-0">
+                  {u.isActive ? "Deactivate" : "Activate"}
+                </button>
+              )}
             </div>
           ))}
         </div>
