@@ -27,37 +27,22 @@ interface NavItem {
   badge?: number;
 }
 
+interface NavSection {
+  label?: string;
+  items: NavItem[];
+}
+
 function Logo() {
   return (
-    <div className="flex items-center gap-[10px] px-5 py-6">
-      <div
-        style={{
-          width: 30,
-          height: 30,
-          borderRadius: 8,
-          background: "#f3a618",
-          color: "#1c2631",
-          fontWeight: 800,
-          fontSize: 16,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "'DM Serif Display', serif",
-          flexShrink: 0,
-        }}
-      >
-        B
-      </div>
-      <span style={{ color: "white", fontWeight: 600, fontSize: 15, letterSpacing: "-0.02em" }}>
-        Baysora
-      </span>
+    <div className="flex items-center px-5 py-5">
+      <img src="/logo-white.png" alt="Baysora" style={{ height: 28, width: "auto" }} />
     </div>
   );
 }
 
-function NavItems({ items, onClose }: { items: NavItem[]; onClose?: () => void }) {
+function NavItemList({ items, onClose }: { items: NavItem[]; onClose?: () => void }) {
   return (
-    <nav className="flex flex-col gap-0.5 px-2">
+    <>
       {items.map((item) => (
         <NavLink
           key={item.path}
@@ -96,11 +81,31 @@ function NavItems({ items, onClose }: { items: NavItem[]; onClose?: () => void }
           )}
         </NavLink>
       ))}
+    </>
+  );
+}
+
+function NavSections({ sections, onClose }: { sections: NavSection[]; onClose?: () => void }) {
+  return (
+    <nav className="flex flex-col gap-0.5 px-2">
+      {sections.map((section, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && (
+            <div style={{ height: 1, background: "rgba(255,255,255,0.08)", margin: "6px 4px" }} />
+          )}
+          {section.label && (
+            <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "4px 12px 2px" }}>
+              {section.label}
+            </p>
+          )}
+          <NavItemList items={section.items} onClose={onClose} />
+        </React.Fragment>
+      ))}
     </nav>
   );
 }
 
-export function Sidebar({ navItems }: { navItems: NavItem[] }) {
+export function Sidebar({ navSections }: { navSections: NavSection[] }) {
   const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
@@ -114,7 +119,7 @@ export function Sidebar({ navItems }: { navItems: NavItem[] }) {
     <div className="flex h-full flex-col" style={{ backgroundColor: "var(--color-sidebar)" }}>
       <Logo />
       <div className="flex-1 overflow-y-auto py-1">
-        <NavItems items={navItems} onClose={() => setMobileOpen(false)} />
+        <NavSections sections={navSections} onClose={() => setMobileOpen(false)} />
       </div>
       <div className="p-4" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
         <div className="flex items-center gap-[10px] px-1 mb-3">
@@ -212,21 +217,30 @@ export function HoldcoSidebar() {
   });
   const pendingCount = pendingExpenses?.length ?? 0;
 
-  const navItems: NavItem[] = [
-    { label: "Overview", path: "/holdco/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-    ...(isAdmin ? [
-      { label: "Companies", path: "/holdco/opcos", icon: <Building2 className="h-4 w-4" /> },
-      { label: "Team", path: "/holdco/users", icon: <Users className="h-4 w-4" /> },
-    ] : []),
-    { label: "All Expenses", path: "/holdco/expenses", icon: <Receipt className="h-4 w-4" /> },
-    { label: "To Review", path: "/holdco/review", icon: <CheckSquare className="h-4 w-4" />, badge: pendingCount },
-    ...(isAdmin ? [
-      { label: "Categories", path: "/holdco/categories", icon: <Tag className="h-4 w-4" /> },
-    ] : []),
-    { label: "My Expenses", path: "/dashboard", icon: <ChevronRight className="h-4 w-4" /> },
-    { label: "New Expense", path: "/expenses/new", icon: <Plus className="h-4 w-4" /> },
+  const navSections: NavSection[] = [
+    {
+      items: [
+        { label: "Overview", path: "/holdco/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
+        ...(isAdmin ? [
+          { label: "Companies", path: "/holdco/opcos", icon: <Building2 className="h-4 w-4" /> },
+          { label: "Team", path: "/holdco/users", icon: <Users className="h-4 w-4" /> },
+        ] : []),
+        { label: "All Expenses", path: "/holdco/expenses", icon: <Receipt className="h-4 w-4" /> },
+        { label: "To Review", path: "/holdco/review", icon: <CheckSquare className="h-4 w-4" />, badge: pendingCount },
+        ...(isAdmin ? [
+          { label: "Categories", path: "/holdco/categories", icon: <Tag className="h-4 w-4" /> },
+        ] : []),
+      ],
+    },
+    {
+      label: "Personal",
+      items: [
+        { label: "My Expenses", path: "/dashboard", icon: <ChevronRight className="h-4 w-4" /> },
+        { label: "New Expense", path: "/expenses/new", icon: <Plus className="h-4 w-4" /> },
+      ],
+    },
   ];
-  return <Sidebar navItems={navItems} />;
+  return <Sidebar navSections={navSections} />;
 }
 
 export function OpcoSidebar() {
@@ -242,22 +256,35 @@ export function OpcoSidebar() {
   });
   const pendingCount = pendingExpenses?.length ?? 0;
 
-  const navItems: NavItem[] = [
-    { label: "Overview", path: "/opco/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-    ...(isAdmin ? [{ label: "Team", path: "/opco/users", icon: <Users className="h-4 w-4" /> }] : []),
-    { label: "Expenses", path: "/opco/expenses", icon: <Receipt className="h-4 w-4" /> },
-    { label: "Categories", path: "/opco/categories", icon: <Tag className="h-4 w-4" /> },
-    ...(canApprove ? [{ label: "To Review", path: "/opco/review", icon: <CheckSquare className="h-4 w-4" />, badge: pendingCount }] : []),
-    { label: "My Expenses", path: "/dashboard", icon: <ChevronRight className="h-4 w-4" /> },
-    { label: "New Expense", path: "/expenses/new", icon: <Plus className="h-4 w-4" /> },
+  const navSections: NavSection[] = [
+    {
+      items: [
+        { label: "Overview", path: "/opco/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
+        ...(isAdmin ? [{ label: "Team", path: "/opco/users", icon: <Users className="h-4 w-4" /> }] : []),
+        { label: "Expenses", path: "/opco/expenses", icon: <Receipt className="h-4 w-4" /> },
+        { label: "Categories", path: "/opco/categories", icon: <Tag className="h-4 w-4" /> },
+        ...(canApprove ? [{ label: "To Review", path: "/opco/review", icon: <CheckSquare className="h-4 w-4" />, badge: pendingCount }] : []) ,
+      ],
+    },
+    {
+      label: "Personal",
+      items: [
+        { label: "My Expenses", path: "/dashboard", icon: <ChevronRight className="h-4 w-4" /> },
+        { label: "New Expense", path: "/expenses/new", icon: <Plus className="h-4 w-4" /> },
+      ],
+    },
   ];
-  return <Sidebar navItems={navItems} />;
+  return <Sidebar navSections={navSections} />;
 }
 
 export function UserSidebar() {
-  const navItems: NavItem[] = [
-    { label: "Home", path: "/dashboard", icon: <Home className="h-4 w-4" /> },
-    { label: "New Expense", path: "/expenses/new", icon: <Plus className="h-4 w-4" /> },
+  const navSections: NavSection[] = [
+    {
+      items: [
+        { label: "Home", path: "/dashboard", icon: <Home className="h-4 w-4" /> },
+        { label: "New Expense", path: "/expenses/new", icon: <Plus className="h-4 w-4" /> },
+      ],
+    },
   ];
-  return <Sidebar navItems={navItems} />;
+  return <Sidebar navSections={navSections} />;
 }
