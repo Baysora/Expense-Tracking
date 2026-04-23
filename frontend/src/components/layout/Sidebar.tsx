@@ -4,21 +4,23 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { expenseApi } from "@/lib/api";
+import { getRoleHome } from "@/lib/router";
 import {
   LayoutDashboard,
   Building2,
   Users,
   Receipt,
+  ReceiptText,
   Tag,
   CheckSquare,
   LogOut,
   Menu,
   X,
-  ChevronRight,
   Home,
-  Plus,
+  PlusCircle,
 } from "lucide-react";
 import { Role } from "@expense/shared";
+import type { TokenClaims } from "@expense/shared";
 
 interface NavItem {
   label: string;
@@ -45,8 +47,9 @@ function NavItemList({ items, onClose }: { items: NavItem[]; onClose?: () => voi
     <>
       {items.map((item) => (
         <NavLink
-          key={item.path}
+          key={item.path + item.label}
           to={item.path}
+          end={item.path === "/dashboard"}
           onClick={onClose}
           className={({ isActive }) =>
             cn(
@@ -105,10 +108,83 @@ function NavSections({ sections, onClose }: { sections: NavSection[]; onClose?: 
   );
 }
 
-export function Sidebar({ navSections }: { navSections: NavSection[] }) {
+function buildNavSections(user: TokenClaims, pendingCount: number): NavSection[] {
+  const isHoldCo =
+    user.role === Role.HOLDCO_ADMIN ||
+    user.role === Role.HOLDCO_MANAGER ||
+    user.role === Role.HOLDCO_USER;
+  const isAdmin = user.role === Role.HOLDCO_ADMIN || user.role === Role.OPCO_ADMIN;
+  const isManager = user.role === Role.HOLDCO_MANAGER || user.role === Role.OPCO_MANAGER;
+  const canReview = isAdmin || isManager;
+  const isHoldCoAdmin = user.role === Role.HOLDCO_ADMIN;
+
+  const homePath = getRoleHome(user.role);
+  const homeIcon = canReview
+    ? <LayoutDashboard className="h-4 w-4" />
+    : <Home className="h-4 w-4" />;
+
+  const sections: NavSection[] = [];
+
+  sections.push({
+    items: [
+      { label: "Home", path: homePath, icon: homeIcon },
+      { label: "My Expenses", path: "/dashboard", icon: <ReceiptText className="h-4 w-4" /> },
+      { label: "New Expense", path: "/expenses/new", icon: <PlusCircle className="h-4 w-4" /> },
+    ],
+  });
+
+  if (canReview) {
+    const prefix = isHoldCo ? "/holdco" : "/opco";
+    sections.push({
+      label: "Review",
+      items: [
+        { label: "All Expenses", path: `${prefix}/expenses`, icon: <Receipt className="h-4 w-4" /> },
+        { label: "To Review", path: `${prefix}/review`, icon: <CheckSquare className="h-4 w-4" />, badge: pendingCount },
+      ],
+    });
+  }
+
+  const manageItems: NavItem[] = [];
+  if (isHoldCoAdmin) {
+    manageItems.push({ label: "Companies", path: "/holdco/opcos", icon: <Building2 className="h-4 w-4" /> });
+  }
+  if (canReview) {
+    const teamPath = isHoldCo ? "/holdco/users" : "/opco/users";
+    manageItems.push({ label: "Team", path: teamPath, icon: <Users className="h-4 w-4" /> });
+  }
+  if (isAdmin) {
+    const catPath = isHoldCo ? "/holdco/categories" : "/opco/categories";
+    manageItems.push({ label: "Categories", path: catPath, icon: <Tag className="h-4 w-4" /> });
+  }
+  if (manageItems.length) {
+    sections.push({ label: "Manage", items: manageItems });
+  }
+
+  return sections;
+}
+
+export function Sidebar() {
   const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
+
+  const canReview =
+    user?.role === Role.HOLDCO_ADMIN ||
+    user?.role === Role.OPCO_ADMIN ||
+    user?.role === Role.HOLDCO_MANAGER ||
+    user?.role === Role.OPCO_MANAGER;
+
+  const { data: pendingExpenses } = useQuery({
+    queryKey: ["pending-count"],
+    queryFn: () => expenseApi.list({ status: "SUBMITTED" }),
+    staleTime: 60_000,
+    enabled: !!user && canReview,
+  });
+  const pendingCount = pendingExpenses?.length ?? 0;
+
+  if (!user) return null;
+
+  const navSections = buildNavSections(user, pendingCount);
 
   function handleLogout() {
     logout();
@@ -138,14 +214,14 @@ export function Sidebar({ navSections }: { navSections: NavSection[] }) {
               flexShrink: 0,
             }}
           >
-            {user?.name?.charAt(0).toUpperCase() ?? "?"}
+            {user.name?.charAt(0).toUpperCase() ?? "?"}
           </div>
           <div className="min-w-0 flex-1">
             <p style={{ color: "white", fontSize: 12, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {user?.name}
+              {user.name}
             </p>
             <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {user?.email}
+              {user.email}
             </p>
           </div>
           <button
@@ -204,87 +280,4 @@ export function Sidebar({ navSections }: { navSections: NavSection[] }) {
       </div>
     </>
   );
-}
-
-export function HoldcoSidebar() {
-  const { user } = useAuth();
-  const isAdmin = user?.role === Role.HOLDCO_ADMIN;
-
-  const { data: pendingExpenses } = useQuery({
-    queryKey: ["pending-count"],
-    queryFn: () => expenseApi.list({ status: "SUBMITTED" }),
-    staleTime: 60_000,
-  });
-  const pendingCount = pendingExpenses?.length ?? 0;
-
-  const navSections: NavSection[] = [
-    {
-      items: [
-        { label: "Overview", path: "/holdco/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-        ...(isAdmin ? [
-          { label: "Companies", path: "/holdco/opcos", icon: <Building2 className="h-4 w-4" /> },
-          { label: "Team", path: "/holdco/users", icon: <Users className="h-4 w-4" /> },
-        ] : []),
-        { label: "All Expenses", path: "/holdco/expenses", icon: <Receipt className="h-4 w-4" /> },
-        { label: "To Review", path: "/holdco/review", icon: <CheckSquare className="h-4 w-4" />, badge: pendingCount },
-        ...(isAdmin ? [
-          { label: "Categories", path: "/holdco/categories", icon: <Tag className="h-4 w-4" /> },
-        ] : []),
-      ],
-    },
-    {
-      label: "Personal",
-      items: [
-        { label: "My Expenses", path: "/dashboard", icon: <ChevronRight className="h-4 w-4" /> },
-        { label: "New Expense", path: "/expenses/new", icon: <Plus className="h-4 w-4" /> },
-      ],
-    },
-  ];
-  return <Sidebar navSections={navSections} />;
-}
-
-export function OpcoSidebar() {
-  const { user } = useAuth();
-  const isAdmin = user?.role === Role.OPCO_ADMIN;
-  const canApprove = user?.role === Role.OPCO_ADMIN || user?.role === Role.OPCO_MANAGER;
-
-  const { data: pendingExpenses } = useQuery({
-    queryKey: ["pending-count"],
-    queryFn: () => expenseApi.list({ status: "SUBMITTED" }),
-    staleTime: 60_000,
-    enabled: canApprove,
-  });
-  const pendingCount = pendingExpenses?.length ?? 0;
-
-  const navSections: NavSection[] = [
-    {
-      items: [
-        { label: "Overview", path: "/opco/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-        ...(isAdmin ? [{ label: "Team", path: "/opco/users", icon: <Users className="h-4 w-4" /> }] : []),
-        { label: "Expenses", path: "/opco/expenses", icon: <Receipt className="h-4 w-4" /> },
-        { label: "Categories", path: "/opco/categories", icon: <Tag className="h-4 w-4" /> },
-        ...(canApprove ? [{ label: "To Review", path: "/opco/review", icon: <CheckSquare className="h-4 w-4" />, badge: pendingCount }] : []) ,
-      ],
-    },
-    {
-      label: "Personal",
-      items: [
-        { label: "My Expenses", path: "/dashboard", icon: <ChevronRight className="h-4 w-4" /> },
-        { label: "New Expense", path: "/expenses/new", icon: <Plus className="h-4 w-4" /> },
-      ],
-    },
-  ];
-  return <Sidebar navSections={navSections} />;
-}
-
-export function UserSidebar() {
-  const navSections: NavSection[] = [
-    {
-      items: [
-        { label: "Home", path: "/dashboard", icon: <Home className="h-4 w-4" /> },
-        { label: "New Expense", path: "/expenses/new", icon: <Plus className="h-4 w-4" /> },
-      ],
-    },
-  ];
-  return <Sidebar navSections={navSections} />;
 }

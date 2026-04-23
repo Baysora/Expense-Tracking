@@ -53,11 +53,25 @@ export default function App() {
                   <AppShell>
                     <Routes>
                       <Route path="dashboard" element={<HoldcoDashboard />} />
-                      <Route path="opcos" element={<HoldcoOpCos />} />
+                      <Route
+                        path="opcos"
+                        element={
+                          <ProtectedRoute allowedRoles={[Role.HOLDCO_ADMIN]}>
+                            <HoldcoOpCos />
+                          </ProtectedRoute>
+                        }
+                      />
                       <Route path="users" element={<HoldcoUsers />} />
                       <Route path="expenses" element={<ExpensesPage />} />
                       <Route path="review" element={<PendingReviewPage />} />
-                      <Route path="categories" element={<HoldcoCategories />} />
+                      <Route
+                        path="categories"
+                        element={
+                          <ProtectedRoute allowedRoles={[Role.HOLDCO_ADMIN]}>
+                            <HoldcoCategories />
+                          </ProtectedRoute>
+                        }
+                      />
                       <Route path="*" element={<Navigate to="dashboard" replace />} />
                     </Routes>
                   </AppShell>
@@ -69,12 +83,19 @@ export default function App() {
             <Route
               path="/opco/*"
               element={
-                <ProtectedRoute allowedRoles={[Role.OPCO_ADMIN, Role.OPCO_MANAGER, Role.OPCO_USER]}>
+                <ProtectedRoute allowedRoles={[Role.OPCO_ADMIN, Role.OPCO_MANAGER]}>
                   <AppShell>
                     <Routes>
                       <Route path="dashboard" element={<OpcoDashboard />} />
                       <Route path="users" element={<OpcoUsers />} />
-                      <Route path="categories" element={<OpcoCategories />} />
+                      <Route
+                        path="categories"
+                        element={
+                          <ProtectedRoute allowedRoles={[Role.OPCO_ADMIN]}>
+                            <OpcoCategories />
+                          </ProtectedRoute>
+                        }
+                      />
                       <Route path="expenses" element={<ExpensesPage />} />
                       <Route path="review" element={<PendingReviewPage />} />
                       <Route path="approvals" element={<Navigate to="/opco/review" replace />} />
