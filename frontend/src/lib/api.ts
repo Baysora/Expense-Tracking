@@ -65,11 +65,13 @@ export const userApi = {
 
 // Expenses
 export const expenseApi = {
-  list: (params?: { status?: string; opCoId?: string; mine?: boolean }) => {
+  list: (params?: { status?: string; opCoId?: string; mine?: boolean; startDate?: string; endDate?: string }) => {
     const qs = new URLSearchParams();
     if (params?.status) qs.set("status", params.status);
     if (params?.opCoId) qs.set("opCoId", params.opCoId);
     if (params?.mine) qs.set("mine", "true");
+    if (params?.startDate) qs.set("startDate", params.startDate);
+    if (params?.endDate) qs.set("endDate", params.endDate);
     const query = qs.toString();
     return request<Expense[]>(`/expenses${query ? `?${query}` : ""}`);
   },
