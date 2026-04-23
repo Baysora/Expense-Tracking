@@ -52,7 +52,7 @@ app.http("createUser", {
     const passwordHash = await bcrypt.hash(temporaryPassword, 12);
 
     const user = await prisma.user.create({
-      data: { email, name, role, opCoId: opCoId ?? null, passwordHash, mustChangePassword: true },
+      data: { email, name, role, opCoId: opCoId ?? null, passwordHash },
       select: { id: true, email: true, name: true, role: true, opCoId: true, isActive: true, createdAt: true },
     });
 

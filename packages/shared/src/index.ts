@@ -163,10 +163,4 @@ export interface TokenClaims {
   name: string;
   role: Role;
   opCoId: string | null;
-  mustChangePassword: boolean;
-}
-
-export interface ChangePasswordRequest {
-  currentPassword: string;
-  newPassword: string;
 }

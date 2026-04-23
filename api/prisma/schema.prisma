@@ -25,15 +25,14 @@ model OpCo {
 }
 
 model User {
-  id                 String   @id @default(cuid())
-  email              String   @unique
-  name               String
-  role               String
-  passwordHash       String
-  mustChangePassword Boolean  @default(false)
-  isActive           Boolean  @default(true)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  role         String
+  passwordHash String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   opCoId String?
   opCo   OpCo?   @relation(fields: [opCoId], references: [id], onDelete: NoAction, onUpdate: NoAction)

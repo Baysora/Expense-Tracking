@@ -1,6 +1,5 @@
 // Entry point — imports all function handlers so Azure Functions v4 registers them
 import "./functions/auth/login";
-import "./functions/auth/changePassword";
 import "./functions/opcos/getOpCos";
 import "./functions/opcos/createOpCo";
 import "./functions/opcos/updateOpCo";
