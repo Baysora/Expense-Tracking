@@ -72,7 +72,8 @@ app.http("uploadAttachment", {
     let blobName: string;
     try {
       ({ blobName } = await uploadBlob(opCoId, expenseId, file.name, buffer, file.type));
-    } catch {
+    } catch (err) {
+      console.error("[uploadAttachment] uploadBlob failed:", err instanceof Error ? err.stack : err);
       return { status: 500, body: JSON.stringify({ error: "Failed to upload file to storage" }), headers: { "Content-Type": "application/json" } };
     }
 

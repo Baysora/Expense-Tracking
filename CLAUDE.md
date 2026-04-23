@@ -60,16 +60,26 @@ Prerequisites: Node.js ≥ 20, Docker.
 # 1. Start SQL Server
 docker run -d --name sql-local -e ACCEPT_EULA=Y -e SA_PASSWORD=YourPass123! -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
 
-# 2. Configure API
+# 2. Start Azurite (Azure Storage emulator — required for attachment upload/download)
+# local.settings.json uses AZURE_STORAGE_CONNECTION_STRING="UseDevelopmentStorage=true",
+# which points at Azurite on ports 10000 (blob), 10001 (queue), 10002 (table).
+# --skipApiVersionCheck is required: @azure/storage-blob ships a newer API version
+# than Azurite's image recognizes, so uploads will 500 with "The API version ... is
+# not supported by Azurite" if the flag is omitted.
+docker run -d --name azurite -p 10000:10000 -p 10001:10001 -p 10002:10002 \
+  mcr.microsoft.com/azure-storage/azurite \
+  azurite --skipApiVersionCheck --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
+
+# 3. Configure API
 cp api/local.settings.json.example api/local.settings.json
 # Edit DATABASE_URL to: sqlserver://localhost:1433;database=ExpenseDB;user=sa;password=YourPass123!;trustServerCertificate=true
 
-# 3. No frontend env vars needed — JWT auth requires no client-side config
+# 4. No frontend env vars needed — JWT auth requires no client-side config
 
-# 4. Initialize DB and seed
+# 5. Initialize DB and seed
 cd api && npx prisma db push && npx prisma db seed && cd ..
 
-# 5. Start both servers in separate terminals
+# 6. Start both servers in separate terminals
 npm run dev:api
 npm run dev:frontend
 ```
