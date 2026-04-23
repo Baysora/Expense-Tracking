@@ -1,7 +1,7 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { opcoApi, expenseApi, userApi } from "@/lib/api";
+import { opcoApi, expenseApi } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
@@ -13,20 +13,6 @@ export function HoldcoDashboard() {
   const { data: pending } = useQuery({
     queryKey: ["pending-review", ""],
     queryFn: () => expenseApi.list({ status: "SUBMITTED" }),
-    staleTime: 60_000,
-  });
-  const { data: allUsers } = useQuery({
-    queryKey: ["users"],
-    queryFn: userApi.list,
-  });
-  const { data: thisMonthExpenses } = useQuery({
-    queryKey: ["expenses-this-month"],
-    queryFn: () => {
-      const now = new Date();
-      const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
-      return expenseApi.list({ startDate, endDate });
-    },
     staleTime: 60_000,
   });
 
@@ -41,8 +27,6 @@ export function HoldcoDashboard() {
   const displayOpcos = opcos?.filter((o) => !o.isHoldCo) ?? [];
   const activeCount = displayOpcos.filter((o) => o.isActive).length;
   const pendingCount = pending?.length ?? 0;
-  const totalEmployees = allUsers?.filter((u) => u.isActive && !u.role.startsWith("HOLDCO_")).length ?? 0;
-  const expensesThisMonth = thisMonthExpenses?.length ?? 0;
 
   const statCard = (icon: string, tint: string, value: string | number, label: string) => (
     <div className="card flex items-center gap-[14px]" style={{ padding: "18px 20px" }}>
@@ -81,8 +65,8 @@ export function HoldcoDashboard() {
       {/* 4-stat grid */}
       <div className="grid grid-cols-2 gap-[14px] sm:grid-cols-4">
         {statCard("🏢", "rgba(10,72,133,0.15)", activeCount, "Active Companies")}
-        {statCard("👥", "rgba(124,58,237,0.15)", totalEmployees, "Total Employees")}
-        {statCard("💳", "rgba(243,166,24,0.15)", expensesThisMonth, "Expenses This Month")}
+        {statCard("👥", "rgba(124,58,237,0.15)", "—", "Total Employees")}
+        {statCard("💳", "rgba(243,166,24,0.15)", "—", "Expenses This Month")}
         {statCard("⏳", "rgba(220,38,38,0.15)", pendingCount, "Pending Approval")}
       </div>
 

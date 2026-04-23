@@ -17,17 +17,9 @@ app.http("getExpenses", {
     const status = url.searchParams.get("status") ?? undefined;
     const opCoIdParam = url.searchParams.get("opCoId") ?? undefined;
     const mine = url.searchParams.get("mine") === "true";
-    const startDate = url.searchParams.get("startDate") ?? undefined;
-    const endDate = url.searchParams.get("endDate") ?? undefined;
 
     const where: Record<string, unknown> = {};
     if (status) where.status = status;
-    if (startDate || endDate) {
-      where.createdAt = {
-        ...(startDate ? { gte: new Date(startDate) } : {}),
-        ...(endDate ? { lte: new Date(endDate) } : {}),
-      };
-    }
 
     if (claims.role === Role.HOLDCO_ADMIN || claims.role === Role.HOLDCO_MANAGER) {
       // Can see all expenses, optionally filtered by OpCo
