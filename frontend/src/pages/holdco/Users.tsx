@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { userApi, opcoApi } from "@/lib/api";
 import { Role, User } from "@expense/shared";
-import { Plus, Loader2, UserCheck, UserX } from "lucide-react";
+import { Plus, Loader2, UserCheck, UserX, KeyRound } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { formatDate } from "@/lib/utils";
+import { ResetPasswordDialog } from "@/components/ResetPasswordDialog";
 
 const ROLE_LABELS: Record<Role, string> = {
   [Role.HOLDCO_ADMIN]: "HoldCo Admin",
@@ -96,6 +97,7 @@ function CreateUserForm({ onSuccess }: { onSuccess: () => void }) {
 export function HoldcoUsers() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [resetTarget, setResetTarget] = useState<User | null>(null);
   const { user: currentUser } = useAuth();
   const isAdmin = currentUser?.role === Role.HOLDCO_ADMIN;
   const { data: users, isLoading } = useQuery({ queryKey: ["users"], queryFn: userApi.list });
@@ -157,14 +159,23 @@ export function HoldcoUsers() {
                   <td className="px-4 py-3" style={{ color: "var(--color-text-muted)" }}>{formatDate(u.createdAt)}</td>
                   <td className="px-4 py-3 text-right">
                     {isAdmin && (
-                      <button
-                        onClick={() => toggle.mutate({ id: u.id, isActive: !u.isActive })}
-                        className="btn-secondary px-3 py-1.5 text-xs"
-                        title={u.isActive ? "Deactivate" : "Activate"}
-                      >
-                        {u.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
-                        {u.isActive ? "Deactivate" : "Activate"}
-                      </button>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => setResetTarget(u)}
+                          className="btn-secondary px-3 py-1.5 text-xs"
+                          title="Reset password"
+                        >
+                          <KeyRound className="h-3.5 w-3.5" /> Reset password
+                        </button>
+                        <button
+                          onClick={() => toggle.mutate({ id: u.id, isActive: !u.isActive })}
+                          className="btn-secondary px-3 py-1.5 text-xs"
+                          title={u.isActive ? "Deactivate" : "Activate"}
+                        >
+                          {u.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+                          {u.isActive ? "Deactivate" : "Activate"}
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -187,14 +198,27 @@ export function HoldcoUsers() {
                 </div>
               </div>
               {isAdmin && (
-                <button onClick={() => toggle.mutate({ id: u.id, isActive: !u.isActive })} className="btn-secondary px-2 py-1 text-xs ml-3 flex-shrink-0">
-                  {u.isActive ? "Deactivate" : "Activate"}
-                </button>
+                <div className="ml-3 flex flex-col gap-1 flex-shrink-0">
+                  <button onClick={() => setResetTarget(u)} className="btn-secondary px-2 py-1 text-xs" title="Reset password">
+                    Reset
+                  </button>
+                  <button onClick={() => toggle.mutate({ id: u.id, isActive: !u.isActive })} className="btn-secondary px-2 py-1 text-xs">
+                    {u.isActive ? "Deactivate" : "Activate"}
+                  </button>
+                </div>
               )}
             </div>
           ))}
         </div>
       </div>
+
+      {resetTarget && (
+        <ResetPasswordDialog
+          userId={resetTarget.id}
+          userName={resetTarget.name}
+          onClose={() => setResetTarget(null)}
+        />
+      )}
     </div>
   );
 }
