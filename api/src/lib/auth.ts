@@ -26,6 +26,7 @@ export async function verifyToken(req: HttpRequest): Promise<TokenClaims | null>
       name: payload.name,
       role: payload.role as Role,
       opCoId: payload.opCoId ?? null,
+      mustChangePassword: Boolean(payload.mustChangePassword),
     };
   } catch {
     return null;

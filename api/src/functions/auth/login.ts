@@ -41,6 +41,7 @@ export async function login(req: HttpRequest): Promise<HttpResponseInit> {
       opCoId: true,
       passwordHash: true,
       isActive: true,
+      mustChangePassword: true,
     },
   });
 
@@ -62,6 +63,7 @@ export async function login(req: HttpRequest): Promise<HttpResponseInit> {
     name: user.name,
     role: user.role as Role,
     opCoId: user.opCoId,
+    mustChangePassword: user.mustChangePassword,
   };
 
   // Sign JWT with HS256
