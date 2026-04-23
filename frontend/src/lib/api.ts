@@ -5,8 +5,6 @@ import type {
   Expense,
   ExpenseCategory,
   ExpenseAttachment,
-  TokenClaims,
-  ChangePasswordRequest,
   CreateOpCoRequest,
   CreateUserRequest,
   CreateExpenseRequest,
@@ -46,16 +44,6 @@ async function request<T>(
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
-
-// Auth
-export const authApi = {
-  me: () => request<TokenClaims>("/me"),
-  changePassword: (data: ChangePasswordRequest) =>
-    request<{ ok: true }>("/auth/change-password", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-};
 
 // OpCos
 export const opcoApi = {

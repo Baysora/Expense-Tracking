@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { userApi } from "@/lib/api";
-import { Role, User } from "@expense/shared";
-import { Plus, Loader2, UserCheck, UserX, KeyRound } from "lucide-react";
+import { Role } from "@expense/shared";
+import { Plus, Loader2, UserCheck, UserX } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { formatDate } from "@/lib/utils";
-import { ResetPasswordDialog } from "@/components/ResetPasswordDialog";
 
 const OPCO_ROLES = [Role.OPCO_ADMIN, Role.OPCO_MANAGER, Role.OPCO_USER];
 const ROLE_LABELS: Record<Role, string> = {
@@ -67,7 +66,6 @@ export function OpcoUsers() {
   const { user } = useAuth();
   const isAdmin = user?.role === Role.OPCO_ADMIN;
   const [showForm, setShowForm] = useState(false);
-  const [resetTarget, setResetTarget] = useState<User | null>(null);
 
   const { data: users, isLoading } = useQuery({ queryKey: ["users"], queryFn: userApi.list });
 
@@ -121,15 +119,10 @@ export function OpcoUsers() {
                   <td className="px-4 py-3" style={{ color: "var(--color-text-muted)" }}>{formatDate(u.createdAt)}</td>
                   <td className="px-4 py-3 text-right">
                     {isAdmin && (
-                      <div className="flex justify-end gap-2">
-                        <button onClick={() => setResetTarget(u)} className="btn-secondary px-2 py-1 text-xs" title="Reset password">
-                          <KeyRound className="h-3.5 w-3.5" /> Reset password
-                        </button>
-                        <button onClick={() => toggle.mutate({ id: u.id, isActive: !u.isActive })} className="btn-secondary px-2 py-1 text-xs">
-                          {u.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
-                          {u.isActive ? "Deactivate" : "Activate"}
-                        </button>
-                      </div>
+                      <button onClick={() => toggle.mutate({ id: u.id, isActive: !u.isActive })} className="btn-secondary px-2 py-1 text-xs">
+                        {u.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+                        {u.isActive ? "Deactivate" : "Activate"}
+                      </button>
                     )}
                   </td>
                 </tr>
@@ -149,27 +142,14 @@ export function OpcoUsers() {
                 </div>
               </div>
               {isAdmin && (
-                <div className="ml-3 flex flex-col gap-1 flex-shrink-0">
-                  <button onClick={() => setResetTarget(u)} className="btn-secondary px-2 py-1 text-xs" title="Reset password">
-                    Reset
-                  </button>
-                  <button onClick={() => toggle.mutate({ id: u.id, isActive: !u.isActive })} className="btn-secondary px-2 py-1 text-xs">
-                    {u.isActive ? "Deactivate" : "Activate"}
-                  </button>
-                </div>
+                <button onClick={() => toggle.mutate({ id: u.id, isActive: !u.isActive })} className="btn-secondary px-2 py-1 text-xs ml-3">
+                  {u.isActive ? "Deactivate" : "Activate"}
+                </button>
               )}
             </div>
           ))}
         </div>
       </div>
-
-      {resetTarget && (
-        <ResetPasswordDialog
-          userId={resetTarget.id}
-          userName={resetTarget.name}
-          onClose={() => setResetTarget(null)}
-        />
-      )}
     </div>
   );
 }
