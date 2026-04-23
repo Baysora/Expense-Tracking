@@ -2,11 +2,12 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "@/lib/AuthContext";
-import { ProtectedRoute, getRoleHome } from "@/lib/router";
+import { ProtectedRoute, RequireAuth, getRoleHome } from "@/lib/router";
 import { AppShell } from "@/components/layout/AppShell";
 import { Role } from "@expense/shared";
 
 import { Login } from "@/pages/Login";
+import { ChangePassword } from "@/pages/ChangePassword";
 import { HoldcoDashboard } from "@/pages/holdco/Dashboard";
 import { HoldcoOpCos } from "@/pages/holdco/OpCos";
 import { HoldcoUsers } from "@/pages/holdco/Users";
@@ -43,6 +44,14 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route
+              path="/change-password"
+              element={
+                <RequireAuth>
+                  <ChangePassword />
+                </RequireAuth>
+              }
+            />
             <Route path="/" element={<RootRedirect />} />
 
             {/* HoldCo routes */}

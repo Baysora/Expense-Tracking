@@ -43,6 +43,8 @@ app.http("updateUser", {
     }
     if (parsed.data.newPassword) {
       updateData.passwordHash = await bcrypt.hash(parsed.data.newPassword, 12);
+      // Admin-set passwords always force a change on next login.
+      updateData.mustChangePassword = true;
     }
 
     const updated = await prisma.user.update({
