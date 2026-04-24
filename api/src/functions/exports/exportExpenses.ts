@@ -72,18 +72,30 @@ app.http("exportExpenses", {
       orderBy: { createdAt: "desc" },
     });
 
+    // Load account mappings for the OpCos present in the result set and index
+    // by `${opCoId}:${categoryId}:${departmentId}` for O(1) lookup per row.
+    const opCoIds = Array.from(new Set(expenses.map((e) => e.opCoId)));
+    const mappings = opCoIds.length
+      ? await prisma.accountMapping.findMany({ where: { opCoId: { in: opCoIds } } })
+      : [];
+    const accountByKey = new Map<string, string>();
+    for (const m of mappings) {
+      accountByKey.set(`${m.opCoId}:${m.categoryId}:${m.departmentId}`, m.accountName);
+    }
+
     const dateStr = new Date().toISOString().slice(0, 10);
     const csvHeader = toCSVRow([
       "ID", "Title", "Amount", "Currency", "Status",
-      "Category", "Department", "Project", "OpCo", "Submitted By", "Email",
+      "Category", "Department", "Account", "Project", "OpCo", "Submitted By", "Email",
       "Created", "Updated", "Reviewer", "Action", "Comment", "Attachment Count",
     ]);
 
     const csvRows = expenses.map((e) => {
       const approval = e.approvalRecords[0];
+      const account = accountByKey.get(`${e.opCoId}:${e.categoryId}:${e.departmentId}`) ?? "UNMAPPED";
       return toCSVRow([
         e.id, e.title, Number(e.amount), e.currency, e.status,
-        e.category.name, e.department.name, e.project ?? "",
+        e.category.name, e.department.name, account, e.project ?? "",
         e.opCo.name, e.submittedBy.name, e.submittedBy.email,
         e.createdAt.toISOString(), e.updatedAt.toISOString(),
         approval?.reviewedBy.name ?? "",

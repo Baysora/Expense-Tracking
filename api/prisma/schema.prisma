@@ -19,10 +19,11 @@ model OpCo {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users       User[]
-  categories  ExpenseCategory[]
-  departments Department[]
-  expenses    Expense[]
+  users           User[]
+  categories      ExpenseCategory[]
+  departments     Department[]
+  expenses        Expense[]
+  accountMappings AccountMapping[]
 }
 
 model User {
@@ -50,9 +51,10 @@ model ExpenseCategory {
   isShared           Boolean @default(false)
   requiresAttachment Boolean @default(false)
 
-  opCoId   String
-  opCo     OpCo      @relation(fields: [opCoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  expenses Expense[]
+  opCoId          String
+  opCo            OpCo              @relation(fields: [opCoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  expenses        Expense[]
+  accountMappings AccountMapping[]
 
   @@unique([opCoId, name])
 }
@@ -62,11 +64,31 @@ model Department {
   name   String
   status String @default("ACTIVE")
 
-  opCoId   String
-  opCo     OpCo      @relation(fields: [opCoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  expenses Expense[]
+  opCoId          String
+  opCo            OpCo              @relation(fields: [opCoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  expenses        Expense[]
+  accountMappings AccountMapping[]
 
   @@unique([opCoId, name])
+}
+
+model AccountMapping {
+  id           String   @id @default(cuid())
+  accountName  String   @db.NVarChar(200)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  opCoId       String
+  opCo         OpCo            @relation(fields: [opCoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  categoryId   String
+  category     ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  departmentId String
+  department   Department      @relation(fields: [departmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([opCoId, categoryId, departmentId])
+  @@index([opCoId])
 }
 
 model Expense {

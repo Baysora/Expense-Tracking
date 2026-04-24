@@ -18,6 +18,7 @@ import {
   Home,
   PlusCircle,
   Network,
+  Link2,
 } from "lucide-react";
 import { Role } from "@expense/shared";
 import type { TokenClaims } from "@expense/shared";
@@ -154,6 +155,9 @@ function buildNavSections(user: TokenClaims, pendingCount: number): NavSection[]
     manageItems.push({ label: "Categories", path: catPath, icon: <Tag className="h-4 w-4" /> });
     const deptPath = isHoldCo ? "/holdco/departments" : "/opco/departments";
     manageItems.push({ label: "Departments", path: deptPath, icon: <Network className="h-4 w-4" /> });
+  }
+  if (isHoldCoAdmin) {
+    manageItems.push({ label: "Account Mappings", path: "/holdco/account-mappings", icon: <Link2 className="h-4 w-4" /> });
   }
   if (manageItems.length) {
     sections.push({ label: "Manage", items: manageItems });
