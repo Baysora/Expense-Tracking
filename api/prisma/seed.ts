@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../generated/prisma-client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -143,11 +143,41 @@ async function main() {
     });
   }
 
+  // ── Departments (per OpCo, not shared) ───────────────────────────────────
+  const holdcoDepartments = ["Executive", "Finance", "Operations", "People"];
+  for (const name of holdcoDepartments) {
+    await prisma.department.upsert({
+      where: { opCoId_name: { opCoId: holdco.id, name } },
+      update: {},
+      create: { name, opCoId: holdco.id },
+    });
+  }
+
+  const acmeDepartments = ["Engineering", "Sales", "Marketing", "Customer Success"];
+  for (const name of acmeDepartments) {
+    await prisma.department.upsert({
+      where: { opCoId_name: { opCoId: acme.id, name } },
+      update: {},
+      create: { name, opCoId: acme.id },
+    });
+  }
+
+  const globexDepartments = ["Product", "Engineering", "Legal", "G&A"];
+  for (const name of globexDepartments) {
+    await prisma.department.upsert({
+      where: { opCoId_name: { opCoId: globex.id, name } },
+      update: {},
+      create: { name, opCoId: globex.id },
+    });
+  }
+
   // ── Sample Expenses for Alice ──────────────────────────────────────────────
   const alice = await prisma.user.findUniqueOrThrow({ where: { email: "alice@acme.com" } });
   const manager = await prisma.user.findUniqueOrThrow({ where: { email: "manager@acme.com" } });
   const travelCat = await prisma.expenseCategory.findFirstOrThrow({ where: { opCoId: acme.id, name: "Travel" } });
   const mealsCat = await prisma.expenseCategory.findFirstOrThrow({ where: { opCoId: acme.id, name: "Meals & Entertainment" } });
+  const salesDept = await prisma.department.findFirstOrThrow({ where: { opCoId: acme.id, name: "Sales" } });
+  const engineeringDept = await prisma.department.findFirstOrThrow({ where: { opCoId: acme.id, name: "Engineering" } });
 
   await prisma.expense.upsert({
     where: { id: "seed-expense-draft-001" },
@@ -160,6 +190,8 @@ async function main() {
       currency: "USD",
       status: "DRAFT",
       categoryId: travelCat.id,
+      departmentId: salesDept.id,
+      project: "Q1 Sales Conference",
       submittedById: alice.id,
       opCoId: acme.id,
     },
@@ -176,6 +208,7 @@ async function main() {
       currency: "USD",
       status: "SUBMITTED",
       categoryId: mealsCat.id,
+      departmentId: engineeringDept.id,
       submittedById: alice.id,
       opCoId: acme.id,
     },
@@ -192,6 +225,8 @@ async function main() {
       currency: "USD",
       status: "APPROVED",
       categoryId: travelCat.id,
+      departmentId: salesDept.id,
+      project: "Q1 Sales Conference",
       submittedById: alice.id,
       opCoId: acme.id,
     },
@@ -208,6 +243,7 @@ async function main() {
       currency: "USD",
       status: "REJECTED",
       categoryId: mealsCat.id,
+      departmentId: salesDept.id,
       submittedById: alice.id,
       opCoId: acme.id,
     },

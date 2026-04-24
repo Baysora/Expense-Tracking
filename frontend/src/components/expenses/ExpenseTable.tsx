@@ -79,6 +79,8 @@ export function ExpenseTable({ expenses, showSubmitter = false, showOpCo = false
                 )}
                 <td style={{ padding: "13px 16px", color: "var(--color-text-muted)" }}>
                   {expense.categoryName}
+                  {expense.departmentName ? ` · ${expense.departmentName}` : ""}
+                  {expense.project ? ` · ${expense.project}` : ""}
                 </td>
                 <td style={{ padding: "13px 16px", textAlign: "right", fontWeight: 600, color: "var(--color-text)", whiteSpace: "nowrap" }}>
                   {formatCurrency(expense.amount, expense.currency)}
@@ -117,7 +119,9 @@ export function ExpenseTable({ expenses, showSubmitter = false, showOpCo = false
                 {expense.title}
               </p>
               <p className="mt-0.5 text-xs" style={{ color: "var(--color-text-muted)" }}>
-                {expense.categoryName} · {formatDate(expense.createdAt)}
+                {expense.categoryName}
+                {expense.departmentName ? ` · ${expense.departmentName}` : ""}
+                {expense.project ? ` · ${expense.project}` : ""} · {formatDate(expense.createdAt)}
               </p>
               {showOpCo && (
                 <p className="mt-0.5 text-xs" style={{ color: "var(--color-text-muted)" }}>

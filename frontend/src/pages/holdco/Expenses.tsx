@@ -29,7 +29,10 @@ function ApprovalCard({ expense, onDone }: { expense: Expense; onDone: () => voi
         <div className="min-w-0">
           <p className="font-semibold" style={{ color: "var(--color-text)" }}>{expense.title}</p>
           <p className="mt-0.5 text-sm" style={{ color: "var(--color-text-muted)" }}>
-            {expense.opCoName} · By {expense.submittedByName} · {expense.categoryName} · {formatDate(expense.createdAt)}
+            {expense.opCoName} · By {expense.submittedByName} · {expense.categoryName}
+            {expense.departmentName ? ` · ${expense.departmentName}` : ""}
+            {expense.project ? ` · ${expense.project}` : ""}
+            {" · "}{formatDate(expense.createdAt)}
           </p>
         </div>
         <div className="ml-4 flex flex-shrink-0 items-center gap-3">

@@ -12,9 +12,11 @@ import { HoldcoDashboard } from "@/pages/holdco/Dashboard";
 import { HoldcoOpCos } from "@/pages/holdco/OpCos";
 import { HoldcoUsers } from "@/pages/holdco/Users";
 import { HoldcoCategories } from "@/pages/holdco/Categories";
+import { HoldcoDepartments } from "@/pages/holdco/Departments";
 import { OpcoDashboard } from "@/pages/opco/Dashboard";
 import { OpcoUsers } from "@/pages/opco/Users";
 import { OpcoCategories } from "@/pages/opco/Categories";
+import { OpcoDepartments } from "@/pages/opco/Departments";
 import { ExpensesPage } from "@/pages/expenses/ExpensesPage";
 import { PendingReviewPage } from "@/pages/expenses/PendingReviewPage";
 import { UserDashboard } from "@/pages/user/Dashboard";
@@ -81,6 +83,14 @@ export default function App() {
                           </ProtectedRoute>
                         }
                       />
+                      <Route
+                        path="departments"
+                        element={
+                          <ProtectedRoute allowedRoles={[Role.HOLDCO_ADMIN]}>
+                            <HoldcoDepartments />
+                          </ProtectedRoute>
+                        }
+                      />
                       <Route path="*" element={<Navigate to="dashboard" replace />} />
                     </Routes>
                   </AppShell>
@@ -102,6 +112,14 @@ export default function App() {
                         element={
                           <ProtectedRoute allowedRoles={[Role.OPCO_ADMIN]}>
                             <OpcoCategories />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="departments"
+                        element={
+                          <ProtectedRoute allowedRoles={[Role.OPCO_ADMIN]}>
+                            <OpcoDepartments />
                           </ProtectedRoute>
                         }
                       />

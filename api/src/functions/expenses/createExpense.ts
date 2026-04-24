@@ -12,6 +12,8 @@ const schema = z.object({
   amount: z.number().positive(),
   currency: z.string().length(3).default("USD"),
   categoryId: z.string().min(1),
+  departmentId: z.string().min(1),
+  project: z.string().trim().max(200).optional(),
 });
 
 app.http("createExpense", {
@@ -47,6 +49,14 @@ app.http("createExpense", {
     });
     if (!category) return badRequest("Invalid or inactive category");
 
+    // Verify department belongs to user's OpCo and is active
+    const department = await prisma.department.findFirst({
+      where: { id: parsed.data.departmentId, status: "ACTIVE", opCoId },
+    });
+    if (!department) return badRequest("Invalid or inactive department");
+
+    const project = parsed.data.project?.trim();
+
     const expense = await prisma.expense.create({
       data: {
         title: parsed.data.title,
@@ -54,13 +64,23 @@ app.http("createExpense", {
         amount: parsed.data.amount,
         currency: parsed.data.currency,
         categoryId: parsed.data.categoryId,
+        departmentId: parsed.data.departmentId,
+        project: project && project.length > 0 ? project : null,
         submittedById: claims.userId,
         opCoId,
         status: "DRAFT",
       },
-      include: { category: { select: { name: true } } },
+      include: {
+        category: { select: { name: true } },
+        department: { select: { name: true } },
+      },
     });
 
-    return created({ ...expense, amount: Number(expense.amount), categoryName: expense.category.name });
+    return created({
+      ...expense,
+      amount: Number(expense.amount),
+      categoryName: expense.category.name,
+      departmentName: expense.department.name,
+    });
   },
 });

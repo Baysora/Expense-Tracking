@@ -19,9 +19,10 @@ model OpCo {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users      User[]
-  categories ExpenseCategory[]
-  expenses   Expense[]
+  users       User[]
+  categories  ExpenseCategory[]
+  departments Department[]
+  expenses    Expense[]
 }
 
 model User {
@@ -56,6 +57,18 @@ model ExpenseCategory {
   @@unique([opCoId, name])
 }
 
+model Department {
+  id     String @id @default(cuid())
+  name   String
+  status String @default("ACTIVE")
+
+  opCoId   String
+  opCo     OpCo      @relation(fields: [opCoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  expenses Expense[]
+
+  @@unique([opCoId, name])
+}
+
 model Expense {
   id          String   @id @default(cuid())
   title       String
@@ -68,6 +81,11 @@ model Expense {
 
   categoryId String
   category   ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  project String?
 
   submittedById String
   submittedBy   User   @relation("SubmittedBy", fields: [submittedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
