@@ -57,6 +57,13 @@ export interface ExpenseCategory {
   requiresAttachment: boolean;
 }
 
+export interface Department {
+  id: string;
+  name: string;
+  opCoId: string;
+  status: CategoryStatus;
+}
+
 export interface Expense {
   id: string;
   title: string;
@@ -68,6 +75,9 @@ export interface Expense {
   opCoName?: string;
   categoryId: string;
   categoryName?: string;
+  departmentId: string;
+  departmentName?: string;
+  project?: string;
   submittedById: string;
   submittedByName?: string;
   createdAt: string;
@@ -116,6 +126,8 @@ export interface CreateExpenseRequest {
   amount: number;
   currency: string;
   categoryId: string;
+  departmentId: string;
+  project?: string;
 }
 
 export interface ReviewExpenseRequest {
@@ -133,6 +145,16 @@ export interface CreateCategoryRequest {
 export interface CopyCategoriesRequest {
   sourceOpCoId: string;
   targetOpCoIds: string[] | "all";
+}
+
+export interface CreateDepartmentRequest {
+  name: string;
+  opCoId: string;
+}
+
+export interface UpdateDepartmentRequest {
+  name?: string;
+  status?: CategoryStatus;
 }
 
 export interface ExportExpensesParams {

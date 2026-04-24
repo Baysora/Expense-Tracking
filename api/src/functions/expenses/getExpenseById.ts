@@ -18,6 +18,7 @@ app.http("getExpenseById", {
 
     const includeOpts = {
       category: { select: { name: true } },
+      department: { select: { name: true } },
       submittedBy: { select: { name: true, email: true } },
       opCo: { select: { name: true } },
       attachments: true,
@@ -61,9 +62,11 @@ app.http("getExpenseById", {
       ...expense,
       amount: Number(expense.amount),
       categoryName: expense.category.name,
+      departmentName: expense.department.name,
       submittedByName: expense.submittedBy.name,
       opCoName: expense.opCo.name,
       category: undefined,
+      department: undefined,
       submittedBy: undefined,
       opCo: undefined,
       attachments: attachmentsWithUrls,

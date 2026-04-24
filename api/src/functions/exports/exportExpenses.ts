@@ -59,6 +59,7 @@ app.http("exportExpenses", {
       where,
       include: {
         category: { select: { name: true } },
+        department: { select: { name: true } },
         submittedBy: { select: { name: true, email: true } },
         opCo: { select: { name: true } },
         attachments: true,
@@ -74,7 +75,7 @@ app.http("exportExpenses", {
     const dateStr = new Date().toISOString().slice(0, 10);
     const csvHeader = toCSVRow([
       "ID", "Title", "Amount", "Currency", "Status",
-      "Category", "OpCo", "Submitted By", "Email",
+      "Category", "Department", "Project", "OpCo", "Submitted By", "Email",
       "Created", "Updated", "Reviewer", "Action", "Comment", "Attachment Count",
     ]);
 
@@ -82,7 +83,8 @@ app.http("exportExpenses", {
       const approval = e.approvalRecords[0];
       return toCSVRow([
         e.id, e.title, Number(e.amount), e.currency, e.status,
-        e.category.name, e.opCo.name, e.submittedBy.name, e.submittedBy.email,
+        e.category.name, e.department.name, e.project ?? "",
+        e.opCo.name, e.submittedBy.name, e.submittedBy.email,
         e.createdAt.toISOString(), e.updatedAt.toISOString(),
         approval?.reviewedBy.name ?? "",
         approval?.action ?? "",

@@ -42,6 +42,7 @@ app.http("getExpenses", {
       where,
       include: {
         category: { select: { name: true } },
+        department: { select: { name: true } },
         submittedBy: { select: { name: true, email: true } },
         opCo: { select: { name: true } },
         _count: { select: { attachments: true } },
@@ -54,9 +55,11 @@ app.http("getExpenses", {
         ...e,
         amount: Number(e.amount),
         categoryName: e.category.name,
+        departmentName: e.department.name,
         submittedByName: e.submittedBy.name,
         opCoName: e.opCo.name,
         category: undefined,
+        department: undefined,
         submittedBy: undefined,
         opCo: undefined,
       }))

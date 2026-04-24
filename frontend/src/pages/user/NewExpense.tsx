@@ -1,10 +1,10 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { expenseApi, categoryApi, opcoApi, attachmentApi } from "@/lib/api";
+import { expenseApi, categoryApi, departmentApi, projectApi, opcoApi, attachmentApi } from "@/lib/api";
 import { Role } from "@expense/shared";
 import { useAuth } from "@/lib/AuthContext";
-import { Loader2, Paperclip } from "lucide-react";
+import { Loader2, Paperclip, Info } from "lucide-react";
 import { formatFileSize } from "@/lib/utils";
 
 export function NewExpense() {
@@ -12,7 +12,8 @@ export function NewExpense() {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [form, setForm] = useState({ title: "", description: "", amount: "", currency: "USD", categoryId: "" });
+  const [form, setForm] = useState({ title: "", description: "", amount: "", currency: "USD", categoryId: "", departmentId: "", project: "" });
+  const [projectQuery, setProjectQuery] = useState("");
   const [localFiles, setLocalFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -23,6 +24,22 @@ export function NewExpense() {
   const { data: categories, isLoading: catLoading } = useQuery({
     queryKey: ["categories", user?.opCoId],
     queryFn: () => categoryApi.list(),
+  });
+
+  const { data: departments, isLoading: deptLoading } = useQuery({
+    queryKey: ["departments", user?.opCoId],
+    queryFn: () => departmentApi.list(),
+  });
+
+  // Debounce the project query so we don't spam the suggestions endpoint
+  useEffect(() => {
+    const t = setTimeout(() => setProjectQuery(form.project), 200);
+    return () => clearTimeout(t);
+  }, [form.project]);
+
+  const { data: projectSuggestions } = useQuery({
+    queryKey: ["project-suggestions", user?.opCoId, projectQuery],
+    queryFn: () => projectApi.suggest(projectQuery),
   });
 
   const { data: opcos } = useQuery({
@@ -46,7 +63,7 @@ export function NewExpense() {
     return false;
   }, [selectedCategory, userOpCo, form.amount, form.categoryId]);
 
-  const canSubmit = Boolean(form.title && form.amount && form.categoryId) &&
+  const canSubmit = Boolean(form.title && form.amount && form.categoryId && form.departmentId) &&
     (!attachmentRequired || localFiles.length > 0);
 
   function addFiles(files: FileList | null) {
@@ -59,16 +76,19 @@ export function NewExpense() {
   }
 
   async function handleAction(asDraft: boolean) {
-    if (!form.title || !form.amount || !form.categoryId) return;
+    if (!form.title || !form.amount || !form.categoryId || !form.departmentId) return;
     setSubmitting(true);
     setError(null);
     try {
+      const trimmedProject = form.project.trim();
       const expense = await expenseApi.create({
         title: form.title,
         description: form.description || undefined,
         amount: parseFloat(form.amount),
         currency: form.currency,
         categoryId: form.categoryId,
+        departmentId: form.departmentId,
+        project: trimmedProject || undefined,
       });
       for (const file of localFiles) {
         await attachmentApi.upload(expense.id, file, "RECEIPT");
@@ -287,6 +307,54 @@ export function NewExpense() {
               )}
             </div>
 
+            {/* Department */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label className="label" htmlFor="department">Department</label>
+              {deptLoading ? (
+                <div className="input flex items-center gap-2" style={{ color: "var(--color-text-muted)" }}>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+                </div>
+              ) : (
+                <select
+                  id="department"
+                  className="input"
+                  value={form.departmentId}
+                  onChange={(e) => setForm((f) => ({ ...f, departmentId: e.target.value }))}
+                  required
+                >
+                  <option value="">Choose a department…</option>
+                  {departments?.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              )}
+            </div>
+
+            {/* Project */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label className="label" htmlFor="project" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                Project <span style={{ color: "var(--color-text-placeholder)", fontWeight: 400, fontSize: 12 }}>(optional)</span>
+                <span
+                  title="Use this to tie the expense to a project, customer, or lead — helps track spend against specific initiatives in reports."
+                  style={{ display: "inline-flex", color: "var(--color-text-placeholder)", cursor: "help" }}
+                  aria-label="Project field help"
+                  tabIndex={0}
+                >
+                  <Info className="h-3.5 w-3.5" />
+                </span>
+              </label>
+              <input
+                id="project"
+                className="input"
+                list="project-suggestions"
+                value={form.project}
+                onChange={(e) => setForm((f) => ({ ...f, project: e.target.value }))}
+                placeholder="e.g. Q1 Sales Conference"
+                maxLength={200}
+              />
+              <datalist id="project-suggestions">
+                {projectSuggestions?.map((p) => <option key={p} value={p} />)}
+              </datalist>
+            </div>
+
             {/* Notes */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label className="label" htmlFor="notes">
@@ -324,7 +392,7 @@ export function NewExpense() {
               <button
                 type="button"
                 onClick={() => handleAction(true)}
-                disabled={!form.title || !form.amount || !form.categoryId || submitting}
+                disabled={!form.title || !form.amount || !form.categoryId || !form.departmentId || submitting}
                 style={{ background: "none", color: "var(--color-text-placeholder)", border: "none", padding: "10px 12px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}
               >
                 Save as Draft

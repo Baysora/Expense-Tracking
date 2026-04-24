@@ -63,6 +63,16 @@ export function ExpenseDetail() {
                 <dd className="mt-1 text-sm" style={{ color: "var(--color-text)" }}>{expense.categoryName}</dd>
               </div>
               <div>
+                <dt className="text-sm font-medium" style={{ color: "var(--color-text-muted)" }}>Department</dt>
+                <dd className="mt-1 text-sm" style={{ color: "var(--color-text)" }}>{expense.departmentName}</dd>
+              </div>
+              {expense.project && (
+                <div>
+                  <dt className="text-sm font-medium" style={{ color: "var(--color-text-muted)" }}>Project</dt>
+                  <dd className="mt-1 text-sm" style={{ color: "var(--color-text)" }}>{expense.project}</dd>
+                </div>
+              )}
+              <div>
                 <dt className="text-sm font-medium" style={{ color: "var(--color-text-muted)" }}>Submitted By</dt>
                 <dd className="mt-1 text-sm" style={{ color: "var(--color-text)" }}>{expense.submittedByName}</dd>
               </div>

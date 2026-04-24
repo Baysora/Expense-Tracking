@@ -4,6 +4,7 @@ import type {
   User,
   Expense,
   ExpenseCategory,
+  Department,
   ExpenseAttachment,
   TokenClaims,
   ChangePasswordRequest,
@@ -13,6 +14,8 @@ import type {
   ReviewExpenseRequest,
   CreateCategoryRequest,
   CopyCategoriesRequest,
+  CreateDepartmentRequest,
+  UpdateDepartmentRequest,
   ExportExpensesParams,
 } from "@expense/shared";
 
@@ -115,6 +118,29 @@ export const categoryApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+};
+
+// Departments
+export const departmentApi = {
+  list: (opCoId?: string) => {
+    const qs = opCoId ? `?opCoId=${encodeURIComponent(opCoId)}` : "";
+    return request<Department[]>(`/departments${qs}`);
+  },
+  create: (data: CreateDepartmentRequest) =>
+    request<Department>("/departments", { method: "POST", body: JSON.stringify(data) }),
+  update: (id: string, data: UpdateDepartmentRequest) =>
+    request<Department>(`/departments/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+};
+
+// Projects (free-text; autocomplete from prior values)
+export const projectApi = {
+  suggest: (q: string) => {
+    const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+    return request<string[]>(`/projects/suggestions${qs}`);
+  },
 };
 
 // Exports

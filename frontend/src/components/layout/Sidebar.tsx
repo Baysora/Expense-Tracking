@@ -6,7 +6,6 @@ import { useQuery } from "@tanstack/react-query";
 import { expenseApi } from "@/lib/api";
 import { getRoleHome } from "@/lib/router";
 import {
-  LayoutDashboard,
   Building2,
   Users,
   Receipt,
@@ -18,6 +17,7 @@ import {
   X,
   Home,
   PlusCircle,
+  Network,
 } from "lucide-react";
 import { Role } from "@expense/shared";
 import type { TokenClaims } from "@expense/shared";
@@ -119,16 +119,13 @@ function buildNavSections(user: TokenClaims, pendingCount: number): NavSection[]
   const isHoldCoAdmin = user.role === Role.HOLDCO_ADMIN;
 
   const homePath = getRoleHome(user.role);
-  const homeIcon = canReview
-    ? <LayoutDashboard className="h-4 w-4" />
-    : <Home className="h-4 w-4" />;
 
   const sections: NavSection[] = [];
 
   sections.push({
     items: [
-      { label: "Home", path: homePath, icon: homeIcon },
-      { label: "My Expenses", path: "/dashboard", icon: <ReceiptText className="h-4 w-4" /> },
+      { label: "Home", path: homePath, icon: <Home className="h-4 w-4" /> },
+      { label: "My Expenses", path: "/dashboard", icon: <Receipt className="h-4 w-4" /> },
       { label: "New Expense", path: "/expenses/new", icon: <PlusCircle className="h-4 w-4" /> },
     ],
   });
@@ -138,7 +135,7 @@ function buildNavSections(user: TokenClaims, pendingCount: number): NavSection[]
     sections.push({
       label: "Review",
       items: [
-        { label: "All Expenses", path: `${prefix}/expenses`, icon: <Receipt className="h-4 w-4" /> },
+        { label: "All Expenses", path: `${prefix}/expenses`, icon: <ReceiptText className="h-4 w-4" /> },
         { label: "To Review", path: `${prefix}/review`, icon: <CheckSquare className="h-4 w-4" />, badge: pendingCount },
       ],
     });
@@ -155,6 +152,8 @@ function buildNavSections(user: TokenClaims, pendingCount: number): NavSection[]
   if (isAdmin) {
     const catPath = isHoldCo ? "/holdco/categories" : "/opco/categories";
     manageItems.push({ label: "Categories", path: catPath, icon: <Tag className="h-4 w-4" /> });
+    const deptPath = isHoldCo ? "/holdco/departments" : "/opco/departments";
+    manageItems.push({ label: "Departments", path: deptPath, icon: <Network className="h-4 w-4" /> });
   }
   if (manageItems.length) {
     sections.push({ label: "Manage", items: manageItems });
