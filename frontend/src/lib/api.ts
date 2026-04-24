@@ -16,6 +16,9 @@ import type {
   CopyCategoriesRequest,
   CreateDepartmentRequest,
   UpdateDepartmentRequest,
+  AccountMapping,
+  CreateAccountMappingRequest,
+  UpdateAccountMappingRequest,
   ExportExpensesParams,
 } from "@expense/shared";
 
@@ -133,6 +136,26 @@ export const departmentApi = {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
+};
+
+// Account Mappings — (OpCo × Category × Department) → account name
+export const accountMappingApi = {
+  list: (opCoId?: string) => {
+    const qs = opCoId ? `?opCoId=${encodeURIComponent(opCoId)}` : "";
+    return request<AccountMapping[]>(`/account-mappings${qs}`);
+  },
+  create: (data: CreateAccountMappingRequest) =>
+    request<AccountMapping>("/account-mappings", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: UpdateAccountMappingRequest) =>
+    request<AccountMapping>(`/account-mappings/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    request<void>(`/account-mappings/${id}`, { method: "DELETE" }),
 };
 
 // Projects (free-text; autocomplete from prior values)

@@ -157,6 +157,30 @@ export interface UpdateDepartmentRequest {
   status?: CategoryStatus;
 }
 
+export interface AccountMapping {
+  id: string;
+  opCoId: string;
+  opCoName?: string;
+  categoryId: string;
+  categoryName?: string;
+  departmentId: string;
+  departmentName?: string;
+  accountName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateAccountMappingRequest {
+  opCoId: string;
+  categoryId: string;
+  departmentId: string;
+  accountName: string;
+}
+
+export interface UpdateAccountMappingRequest {
+  accountName: string;
+}
+
 export interface ExportExpensesParams {
   opCoId?: string;
   userId?: string;

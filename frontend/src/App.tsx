@@ -13,6 +13,7 @@ import { HoldcoOpCos } from "@/pages/holdco/OpCos";
 import { HoldcoUsers } from "@/pages/holdco/Users";
 import { HoldcoCategories } from "@/pages/holdco/Categories";
 import { HoldcoDepartments } from "@/pages/holdco/Departments";
+import { HoldcoAccountMappings } from "@/pages/holdco/AccountMappings";
 import { OpcoDashboard } from "@/pages/opco/Dashboard";
 import { OpcoUsers } from "@/pages/opco/Users";
 import { OpcoCategories } from "@/pages/opco/Categories";
@@ -88,6 +89,14 @@ export default function App() {
                         element={
                           <ProtectedRoute allowedRoles={[Role.HOLDCO_ADMIN]}>
                             <HoldcoDepartments />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="account-mappings"
+                        element={
+                          <ProtectedRoute allowedRoles={[Role.HOLDCO_ADMIN]}>
+                            <HoldcoAccountMappings />
                           </ProtectedRoute>
                         }
                       />
