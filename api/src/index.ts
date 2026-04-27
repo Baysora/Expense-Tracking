@@ -24,6 +24,7 @@ import "./functions/expenses/getExpenses";
 import "./functions/expenses/getExpenseById";
 import "./functions/expenses/createExpense";
 import "./functions/expenses/submitExpense";
+import "./functions/expenses/updateExpense";
 import "./functions/expenses/reviewExpense";
 import "./functions/uploads/uploadAttachment";
 import "./functions/exports/exportExpenses";
