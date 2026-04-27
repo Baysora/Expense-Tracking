@@ -130,6 +130,16 @@ export interface CreateExpenseRequest {
   project?: string;
 }
 
+export interface UpdateExpenseRequest {
+  title?: string;
+  description?: string;
+  amount?: number;
+  currency?: string;
+  categoryId?: string;
+  departmentId?: string;
+  project?: string;
+}
+
 export interface ReviewExpenseRequest {
   action: "APPROVED" | "REJECTED";
   comment?: string;

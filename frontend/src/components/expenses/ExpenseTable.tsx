@@ -1,14 +1,15 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Expense } from "@expense/shared";
+import { Expense, ExpenseStatus } from "@expense/shared";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { StatusBadge } from "./StatusBadge";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Pencil } from "lucide-react";
 
 interface ExpenseTableProps {
   expenses: Expense[];
   showSubmitter?: boolean;
   showOpCo?: boolean;
+  editableDrafts?: boolean;
 }
 
 const thStyle: React.CSSProperties = {
@@ -23,7 +24,7 @@ const thStyle: React.CSSProperties = {
   borderBottom: "1px solid var(--color-bg-warm-hover)",
 };
 
-export function ExpenseTable({ expenses, showSubmitter = false, showOpCo = false }: ExpenseTableProps) {
+export function ExpenseTable({ expenses, showSubmitter = false, showOpCo = false, editableDrafts = false }: ExpenseTableProps) {
   if (expenses.length === 0) {
     return (
       <div className="card flex flex-col items-center justify-center py-12 text-center">
@@ -92,13 +93,24 @@ export function ExpenseTable({ expenses, showSubmitter = false, showOpCo = false
                   {formatDate(expense.createdAt)}
                 </td>
                 <td style={{ padding: "13px 16px", textAlign: "right" }}>
-                  <Link
-                    to={`/expenses/${expense.id}`}
-                    className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
-                    style={{ color: "var(--color-primary)" }}
-                  >
-                    View <ChevronRight className="h-3 w-3" />
-                  </Link>
+                  {editableDrafts && expense.status === ExpenseStatus.DRAFT ? (
+                    <Link
+                      to={`/expenses/${expense.id}`}
+                      state={{ editing: true }}
+                      className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
+                      style={{ color: "var(--color-primary)" }}
+                    >
+                      Edit <Pencil className="h-3 w-3" />
+                    </Link>
+                  ) : (
+                    <Link
+                      to={`/expenses/${expense.id}`}
+                      className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
+                      style={{ color: "var(--color-primary)" }}
+                    >
+                      View <ChevronRight className="h-3 w-3" />
+                    </Link>
+                  )}
                 </td>
               </tr>
             ))}
@@ -112,6 +124,7 @@ export function ExpenseTable({ expenses, showSubmitter = false, showOpCo = false
           <Link
             key={expense.id}
             to={`/expenses/${expense.id}`}
+            state={editableDrafts && expense.status === ExpenseStatus.DRAFT ? { editing: true } : undefined}
             className="flex items-start justify-between p-4 hover:bg-[#f9f8f6] transition-colors"
           >
             <div className="flex-1 min-w-0">

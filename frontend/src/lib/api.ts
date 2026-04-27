@@ -11,6 +11,7 @@ import type {
   CreateOpCoRequest,
   CreateUserRequest,
   CreateExpenseRequest,
+  UpdateExpenseRequest,
   ReviewExpenseRequest,
   CreateCategoryRequest,
   CopyCategoriesRequest,
@@ -96,6 +97,8 @@ export const expenseApi = {
     request<Expense>("/expenses", { method: "POST", body: JSON.stringify(data) }),
   submit: (id: string) =>
     request<Expense>(`/expenses/${id}/submit`, { method: "PATCH" }),
+  update: (id: string, data: UpdateExpenseRequest) =>
+    request<Expense>(`/expenses/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   review: (id: string, data: ReviewExpenseRequest) =>
     request<{ expense: Expense }>(`/expenses/${id}/review`, {
       method: "POST",
@@ -229,4 +232,8 @@ export const attachmentApi = {
 
     return res.json();
   },
+  remove: (expenseId: string, attachmentId: string) =>
+    request<{ success: boolean }>(`/expenses/${expenseId}/attachments/${attachmentId}`, {
+      method: "DELETE",
+    }),
 };

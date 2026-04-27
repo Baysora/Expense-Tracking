@@ -103,7 +103,7 @@ export function UserDashboard() {
             View all →
           </Link>
         </div>
-        <ExpenseTable expenses={expenses ?? []} />
+        <ExpenseTable expenses={expenses ?? []} editableDrafts />
       </div>
     </div>
   );
