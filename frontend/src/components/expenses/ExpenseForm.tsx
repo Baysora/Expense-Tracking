@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CreateExpenseRequest } from "@expense/shared";
+import { CreateExpenseRequest, ExpenseAttachment } from "@expense/shared";
 import { Role } from "@expense/shared";
 import { useAuth } from "@/lib/AuthContext";
-import { expenseApi, categoryApi, departmentApi, projectApi, opcoApi, attachmentApi } from "@/lib/api";
+import { categoryApi, departmentApi, projectApi, opcoApi, attachmentApi } from "@/lib/api";
 import { Loader2, Paperclip, Info } from "lucide-react";
-import { formatFileSize } from "@/lib/utils";
+import { formatFileSize, getFileIcon } from "@/lib/utils";
 
 export interface ExpenseFormProps {
   mode: "create" | "edit";
@@ -19,11 +19,12 @@ export interface ExpenseFormProps {
     departmentId: string;
     project: string;
   };
+  existingAttachments?: ExpenseAttachment[];
   onSave: (data: CreateExpenseRequest, submitNow?: boolean) => Promise<void>;
   onCancel?: () => void;
 }
 
-export function ExpenseForm({ mode, expenseId, initialData, onSave, onCancel }: ExpenseFormProps) {
+export function ExpenseForm({ mode, expenseId, initialData, existingAttachments, onSave, onCancel }: ExpenseFormProps) {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -38,6 +39,7 @@ export function ExpenseForm({ mode, expenseId, initialData, onSave, onCancel }: 
   });
   const [projectQuery, setProjectQuery] = useState(initialData?.project ?? "");
   const [localFiles, setLocalFiles] = useState<File[]>([]);
+  const [removedAttachmentIds, setRemovedAttachmentIds] = useState<string[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,6 @@ export function ExpenseForm({ mode, expenseId, initialData, onSave, onCancel }: 
     queryFn: () => departmentApi.list(),
   });
 
-  // Debounce the project query so we don't spam the suggestions endpoint
   useEffect(() => {
     const t = setTimeout(() => setProjectQuery(form.project), 200);
     return () => clearTimeout(t);
@@ -86,8 +87,15 @@ export function ExpenseForm({ mode, expenseId, initialData, onSave, onCancel }: 
     return false;
   }, [selectedCategory, userOpCo, form.amount, form.categoryId]);
 
+  const visibleExistingAttachments = useMemo(
+    () => (existingAttachments ?? []).filter((a) => !removedAttachmentIds.includes(a.id)),
+    [existingAttachments, removedAttachmentIds]
+  );
+
+  const effectiveAttachmentCount = visibleExistingAttachments.length + localFiles.length;
+
   const fieldsValid = Boolean(form.title && form.amount && form.categoryId && form.departmentId);
-  const canSubmit = fieldsValid && (!attachmentRequired || localFiles.length > 0);
+  const canSubmit = fieldsValid && (!attachmentRequired || effectiveAttachmentCount > 0);
 
   function addFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
@@ -100,7 +108,7 @@ export function ExpenseForm({ mode, expenseId, initialData, onSave, onCancel }: 
 
   async function handleSave(submitNow: boolean) {
     if (!fieldsValid) return;
-    if (submitNow && attachmentRequired && localFiles.length === 0) return;
+    if (submitNow && attachmentRequired && effectiveAttachmentCount === 0) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -115,20 +123,31 @@ export function ExpenseForm({ mode, expenseId, initialData, onSave, onCancel }: 
       const trimmedProject = form.project.trim();
       if (trimmedProject) data.project = trimmedProject;
 
-      await onSave(data, submitNow);
-
-        // After save in edit mode, upload any new attachments
       if (mode === "edit" && expenseId) {
         for (const file of localFiles) {
           await attachmentApi.upload(expenseId, file, "RECEIPT");
         }
+        for (const attId of removedAttachmentIds) {
+          await attachmentApi.remove(expenseId, attId);
+        }
       }
+
+      await onSave(data, submitNow);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setSubmitting(false);
     }
   }
+
+  const sectionLabel: React.CSSProperties = {
+    fontSize: 11,
+    fontWeight: 700,
+    color: "var(--color-text-placeholder)",
+    textTransform: "uppercase",
+    letterSpacing: "0.07em",
+    marginBottom: 10,
+  };
 
   const dropzoneStyle: React.CSSProperties = {
     border: "2px dashed",
@@ -142,121 +161,126 @@ export function ExpenseForm({ mode, expenseId, initialData, onSave, onCancel }: 
     minHeight: 200,
     justifyContent: "center",
     transition: "all 0.15s",
-    borderColor: dragOver ? "#0a4885" : localFiles.length > 0 ? "#16a34a" : "#ddd9d3",
-    backgroundColor: dragOver ? "rgba(10,72,133,0.03)" : localFiles.length > 0 ? "rgba(22,163,74,0.03)" : "var(--color-bg)",
+    borderColor: dragOver ? "#0a4885" : effectiveAttachmentCount > 0 ? "#16a34a" : "#ddd9d3",
+    backgroundColor: dragOver ? "rgba(10,72,133,0.03)" : effectiveAttachmentCount > 0 ? "rgba(22,163,74,0.03)" : "var(--color-bg)",
     cursor: "default",
-  };
-
-  const sectionLabel: React.CSSProperties = {
-    fontSize: 11,
-    fontWeight: 700,
-    color: "var(--color-text-placeholder)",
-    textTransform: "uppercase",
-    letterSpacing: "0.07em",
-    marginBottom: 10,
   };
 
   return (
     <div className="space-y-5">
-      {/* Two-column form */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_1.4fr] items-start">
-        {/* Left — Receipt upload (create mode only) */}
-        {mode === "create" && (
-          <div>
-            <p style={sectionLabel}>Receipt or Invoice</p>
 
-            {/* Drop zone */}
-            <div
-              style={dropzoneStyle}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={(e) => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); }}
-            >
-              {localFiles.length === 0 ? (
-                <>
-                  <div style={{ fontSize: 32, marginBottom: 4 }}>📎</div>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>Drop your receipt here</p>
-                  <p style={{ fontSize: 12, color: "var(--color-text-placeholder)" }}>PDF, JPEG, PNG, HEIC · max 10 MB</p>
-                  <label
-                    style={{ marginTop: 12, display: "inline-flex", alignItems: "center", background: "var(--color-primary)", color: "white", borderRadius: 9, padding: "8px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", fontFamily: "inherit", boxShadow: "0 1px 3px rgba(10,72,133,0.3)" }}
-                  >
-                    Choose file
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      multiple
-                      accept=".pdf,.jpg,.jpeg,.png,.heic,.tiff,.gif"
-                      style={{ display: "none" }}
-                      onChange={(e) => addFiles(e.target.files)}
-                    />
-                  </label>
-                </>
-              ) : (
-                <>
-                  <div style={{ fontSize: 28, marginBottom: 4 }}>✅</div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "#065f46" }}>
-                    {localFiles.length} file{localFiles.length !== 1 ? "s" : ""} attached
-                  </p>
-                  <label
-                    style={{ marginTop: 10, display: "inline-flex", alignItems: "center", background: "var(--color-bg-subtle)", color: "var(--color-text)", borderRadius: 9, padding: "8px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", fontFamily: "inherit" }}
-                  >
-                    Add more
-                    <input
-                      type="file"
-                      multiple
-                      accept=".pdf,.jpg,.jpeg,.png,.heic,.tiff,.gif"
-                      style={{ display: "none" }}
-                      onChange={(e) => addFiles(e.target.files)}
-                    />
-                  </label>
-                </>
-              )}
-            </div>
+        {/* Left — Attachments */}
+        <div>
+          <p style={sectionLabel}>{mode === "create" ? "Receipt or Invoice" : "Attachments"}</p>
 
-            {/* File list */}
-            {localFiles.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
-                {localFiles.map((f, i) => (
-                  <div
-                    key={i}
-                    style={{ display: "flex", alignItems: "center", gap: 8, background: "white", borderRadius: 9, padding: "8px 12px", border: "1px solid #ede9e3", boxShadow: "0 1px 2px rgba(26,35,50,0.04)" }}
-                  >
-                    <span style={{ fontSize: 14, flexShrink: 0 }}>📄</span>
-                    <span style={{ flex: 1, fontSize: 12, color: "var(--color-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
-                    <span style={{ fontSize: 11, color: "var(--color-text-placeholder)", flexShrink: 0 }}>{formatFileSize(f.size)}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeFile(i)}
-                      style={{ background: "none", border: "none", color: "var(--color-text-placeholder)", cursor: "pointer", fontSize: 11, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
-                      aria-label="Remove file"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Attachment required warning */}
-            {attachmentRequired && localFiles.length === 0 && (
-              <div
-                className="flex items-start gap-2 rounded-lg border p-3 text-sm mt-3"
-                style={{ borderColor: "var(--color-warning)", backgroundColor: "rgba(217,119,6,0.08)" }}
-              >
-                <Paperclip className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: "#d97706" }} />
-                <p style={{ color: "#92400e" }}>
-                  An attachment is required for this expense. Please upload at least one file.
+          <div
+            style={dropzoneStyle}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); }}
+          >
+            {effectiveAttachmentCount === 0 ? (
+              <>
+                <div style={{ fontSize: 32, marginBottom: 4 }}>📎</div>
+                <p style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>Drop your receipt here</p>
+                <p style={{ fontSize: 12, color: "var(--color-text-placeholder)" }}>PDF, JPEG, PNG, HEIC · max 10 MB</p>
+                <label
+                  style={{ marginTop: 12, display: "inline-flex", alignItems: "center", background: "var(--color-primary)", color: "white", borderRadius: 9, padding: "8px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", fontFamily: "inherit", boxShadow: "0 1px 3px rgba(10,72,133,0.3)" }}
+                >
+                  Choose file
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept=".pdf,.jpg,.jpeg,.png,.heic,.tiff,.gif"
+                    style={{ display: "none" }}
+                    onChange={(e) => addFiles(e.target.files)}
+                  />
+                </label>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 28, marginBottom: 4 }}>✅</div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#065f46" }}>
+                  {effectiveAttachmentCount} file{effectiveAttachmentCount !== 1 ? "s" : ""} attached
                 </p>
-              </div>
+                <label
+                  style={{ marginTop: 10, display: "inline-flex", alignItems: "center", background: "var(--color-bg-subtle)", color: "var(--color-text)", borderRadius: 9, padding: "8px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", fontFamily: "inherit" }}
+                >
+                  Add more
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.jpg,.jpeg,.png,.heic,.tiff,.gif"
+                    style={{ display: "none" }}
+                    onChange={(e) => addFiles(e.target.files)}
+                  />
+                </label>
+              </>
             )}
           </div>
-        )}
+
+          {/* File list */}
+          {effectiveAttachmentCount > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
+              {visibleExistingAttachments.map((a) => (
+                <div
+                  key={a.id}
+                  style={{ display: "flex", alignItems: "center", gap: 8, background: "white", borderRadius: 9, padding: "8px 12px", border: "1px solid #ede9e3", boxShadow: "0 1px 2px rgba(26,35,50,0.04)" }}
+                >
+                  <span style={{ fontSize: 14, flexShrink: 0 }}>{getFileIcon(a.mimeType)}</span>
+                  <span style={{ flex: 1, fontSize: 12, color: "var(--color-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.fileName}</span>
+                  <span style={{ fontSize: 11, color: "var(--color-text-placeholder)", flexShrink: 0 }}>{formatFileSize(a.sizeBytes)}</span>
+                  <button
+                    type="button"
+                    onClick={() => setRemovedAttachmentIds((prev) => [...prev, a.id])}
+                    style={{ background: "none", border: "none", color: "var(--color-text-placeholder)", cursor: "pointer", fontSize: 11, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
+                    aria-label={`Remove ${a.fileName}`}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              {localFiles.map((f, i) => (
+                <div
+                  key={i}
+                  style={{ display: "flex", alignItems: "center", gap: 8, background: "white", borderRadius: 9, padding: "8px 12px", border: "1px solid #ede9e3", boxShadow: "0 1px 2px rgba(26,35,50,0.04)" }}
+                >
+                  <span style={{ fontSize: 14, flexShrink: 0 }}>📄</span>
+                  <span style={{ flex: 1, fontSize: 12, color: "var(--color-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
+                  <span style={{ fontSize: 11, color: "var(--color-text-placeholder)", flexShrink: 0 }}>{formatFileSize(f.size)}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(i)}
+                    style={{ background: "none", border: "none", color: "var(--color-text-placeholder)", cursor: "pointer", fontSize: 11, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
+                    aria-label="Remove file"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {attachmentRequired && effectiveAttachmentCount === 0 && (
+            <div
+              className="flex items-start gap-2 rounded-lg border p-3 text-sm mt-3"
+              style={{ borderColor: "var(--color-warning)", backgroundColor: "rgba(217,119,6,0.08)" }}
+            >
+              <Paperclip className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: "#d97706" }} />
+              <p style={{ color: "#92400e" }}>
+                An attachment is required for this expense. Please upload at least one file.
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* Right — Expense details */}
         <div>
           <p style={sectionLabel}>{mode === "create" ? "Expense Details" : "Edit Expense"}</p>
           <div style={{ background: "white", borderRadius: 16, padding: 24, boxShadow: "var(--shadow-card)", display: "flex", flexDirection: "column", gap: 16 }}>
-            {/* Title */}
+
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label className="label" htmlFor="title">What did you spend on?</label>
               <input
@@ -269,7 +293,6 @@ export function ExpenseForm({ mode, expenseId, initialData, onSave, onCancel }: 
               />
             </div>
 
-            {/* Amount + Currency */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 90px", gap: 10 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <label className="label" htmlFor="amount">Amount</label>
@@ -300,7 +323,6 @@ export function ExpenseForm({ mode, expenseId, initialData, onSave, onCancel }: 
               </div>
             </div>
 
-            {/* Category */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label className="label" htmlFor="category">Category</label>
               {catLoading ? (
@@ -321,7 +343,6 @@ export function ExpenseForm({ mode, expenseId, initialData, onSave, onCancel }: 
               )}
             </div>
 
-            {/* Department */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label className="label" htmlFor="department">Department</label>
               {deptLoading ? (
@@ -342,7 +363,6 @@ export function ExpenseForm({ mode, expenseId, initialData, onSave, onCancel }: 
               )}
             </div>
 
-            {/* Project */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label className="label" htmlFor="project" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                 Project <span style={{ color: "var(--color-text-placeholder)", fontWeight: 400, fontSize: 12 }}>(optional)</span>
@@ -369,7 +389,6 @@ export function ExpenseForm({ mode, expenseId, initialData, onSave, onCancel }: 
               </datalist>
             </div>
 
-            {/* Notes */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label className="label" htmlFor="notes">
                 Notes <span style={{ color: "var(--color-text-placeholder)", fontWeight: 400, fontSize: 12 }}>(optional)</span>
@@ -388,7 +407,6 @@ export function ExpenseForm({ mode, expenseId, initialData, onSave, onCancel }: 
               <p className="text-sm" style={{ color: "var(--color-danger)" }}>{error}</p>
             )}
 
-            {/* Actions */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4 }}>
               {mode === "create" ? (
                 <>
@@ -397,10 +415,7 @@ export function ExpenseForm({ mode, expenseId, initialData, onSave, onCancel }: 
                     onClick={() => handleSave(true)}
                     disabled={!canSubmit || submitting}
                     className="btn-primary"
-                    style={{
-                      opacity: canSubmit && !submitting ? 1 : 0.45,
-                      cursor: canSubmit && !submitting ? "pointer" : "not-allowed",
-                    }}
+                    style={{ opacity: canSubmit && !submitting ? 1 : 0.45, cursor: canSubmit && !submitting ? "pointer" : "not-allowed" }}
                   >
                     {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                     Submit for Approval
@@ -421,10 +436,7 @@ export function ExpenseForm({ mode, expenseId, initialData, onSave, onCancel }: 
                     onClick={() => handleSave(false)}
                     disabled={!fieldsValid || submitting}
                     className="btn-primary"
-                    style={{
-                      opacity: fieldsValid && !submitting ? 1 : 0.45,
-                      cursor: fieldsValid && !submitting ? "pointer" : "not-allowed",
-                    }}
+                    style={{ opacity: fieldsValid && !submitting ? 1 : 0.45, cursor: fieldsValid && !submitting ? "pointer" : "not-allowed" }}
                   >
                     {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                     Save Changes
@@ -443,6 +455,7 @@ export function ExpenseForm({ mode, expenseId, initialData, onSave, onCancel }: 
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );

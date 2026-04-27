@@ -232,4 +232,8 @@ export const attachmentApi = {
 
     return res.json();
   },
+  remove: (expenseId: string, attachmentId: string) =>
+    request<{ success: boolean }>(`/expenses/${expenseId}/attachments/${attachmentId}`, {
+      method: "DELETE",
+    }),
 };

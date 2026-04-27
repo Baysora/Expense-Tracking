@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { expenseApi } from "@/lib/api";
 import { StatusBadge } from "@/components/expenses/StatusBadge";
@@ -12,9 +12,10 @@ import { useAuth } from "@/lib/AuthContext";
 export function ExpenseDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(location.state?.editing === true);
 
   const { data: expense, isLoading, error } = useQuery({
     queryKey: ["expense", id],
@@ -35,7 +36,7 @@ export function ExpenseDetail() {
     );
   }
 
-  const isOwner = expense.submittedById === user?.id;
+  const isOwner = expense.submittedById === user?.userId;
   const isDraft = expense.status === ExpenseStatus.DRAFT;
 
   return (
@@ -76,6 +77,7 @@ export function ExpenseDetail() {
         <ExpenseForm
           mode="edit"
           expenseId={id}
+          existingAttachments={expense.attachments}
           initialData={{
             title: expense.title,
             description: expense.description ?? "",
@@ -87,7 +89,10 @@ export function ExpenseDetail() {
           }}
           onSave={async (data) => {
             await expenseApi.update(id!, data);
-            await queryClient.invalidateQueries({ queryKey: ["expense", id] });
+            await Promise.all([
+              queryClient.invalidateQueries({ queryKey: ["expense", id] }),
+              queryClient.invalidateQueries({ queryKey: ["expenses"] }),
+            ]);
             setIsEditing(false);
           }}
           onCancel={() => setIsEditing(false)}
